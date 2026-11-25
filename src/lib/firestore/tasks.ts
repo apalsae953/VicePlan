@@ -109,6 +109,7 @@ export async function createTask(projectId: string, uid: string, draft: TaskDraf
     const next = (typeof counter === "number" ? counter : 0) + 1;
     tx.set(taskRef, {
       ...taskFields(draft),
+      images: [],
       number: next,
       position: draft.position,
       createdBy: uid,
@@ -137,6 +138,8 @@ export function restoreTask(projectId: string, uid: string, task: BoardTask) {
   const { db } = getFirebase();
   return setDoc(taskDoc(db, projectId, task.id), {
     ...taskFields(task),
+    // Sus imágenes siguen guardadas: se borran solo si no se deshace el borrado.
+    images: task.images,
     number: task.number,
     position: task.position,
     completedAt: task.completedAt ? Timestamp.fromDate(new Date(task.completedAt)) : null,

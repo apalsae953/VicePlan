@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronRight, Cloud, CloudCheck, CloudOff, Loader2 } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ChevronRight, Cloud, CloudCheck, CloudOff, ImagePlus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { useCurrentUser } from "@/components/auth/auth-provider";
+import { ImagePickButton } from "@/components/images/image-pick-button";
 import { useContentAutosave, type SaveStatus } from "@/hooks/use-content-autosave";
 import { useGddActions } from "@/hooks/use-gdd-actions";
 import { formatRelative, type GddOption } from "@/lib/board";
-import { uploadGddImage } from "@/lib/firestore/gdd-assets";
+import { imageErrorMessage, uploadGddImage } from "@/lib/firestore/gdd-assets";
+import { imageRejection } from "@/lib/images";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspace-store-provider";
 import { GddLinkedTasks } from "./gdd-linked-tasks";
@@ -55,6 +58,20 @@ export function GddDocument({ node, outline, mode, onModeChange, onNavigate, isN
         <div className="mt-1.5 mb-6 flex h-5 items-center gap-3 text-xs text-muted-foreground">
           <span suppressHydrationWarning>Actualizada {formatRelative(node.updatedAt)}</span>
           {(mode === "edit" || status !== "saved") && <SaveIndicator status={status} onRetry={() => void flush()} />}
+          {mode === "preview" && (
+            <AppendImageButton
+              onUpload={async (files) => {
+                // Se añaden al final de la página; luego se pueden mover en Editar.
+                let next = content.trimEnd();
+                for (const file of files) {
+                  const url = await uploadGddImage(projectId, node.id, user.uid, file);
+                  next += `${next ? "\n\n" : ""}![${altFromName(file.name)}](${url})`;
+                }
+                change(`${next}\n`);
+                await flush();
+              }}
+            />
+          )}
         </div>
 
         {mode === "edit" ? (
@@ -114,6 +131,43 @@ export function GddDocument({ node, outline, mode, onModeChange, onNavigate, isN
         </div>
       </aside>
     </div>
+  );
+}
+
+function altFromName(name: string) {
+  return name.replace(/\.[^.]+$/, "").replace(/[[\]]/g, "").replace(/[-_]+/g, " ").trim() || "imagen";
+}
+
+/** "Añadir imagen" sin entrar en modo edición: la sube y la pone al final de la página. */
+function AppendImageButton({ onUpload }: { onUpload: (files: File[]) => Promise<void> }) {
+  const [busy, startBusy] = useTransition();
+  return (
+    <ImagePickButton
+      variant="ghost"
+      size="xs"
+      multiple
+      disabled={busy}
+      className="ml-auto gap-1 text-muted-foreground"
+      onFiles={(files) => {
+        const valid = files.filter((file) => {
+          const problem = imageRejection(file);
+          if (problem) toast.error(problem);
+          return !problem;
+        });
+        if (!valid.length) return;
+        startBusy(async () => {
+          try {
+            await onUpload(valid);
+            toast.success(valid.length === 1 ? "Imagen añadida al final de la página" : `${valid.length} imágenes añadidas al final`);
+          } catch (error) {
+            toast.error(imageErrorMessage(error));
+          }
+        });
+      }}
+    >
+      {busy ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+      Añadir imagen
+    </ImagePickButton>
   );
 }
 

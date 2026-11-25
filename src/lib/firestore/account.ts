@@ -18,6 +18,7 @@ import { getFirebase } from "@/lib/firebase";
 import { declineInvitation, normalizeEmail, removeMember } from "./members";
 import {
   activityCollection,
+  avatarDoc,
   commentsCollection,
   gddAssetsCollection,
   gddCollection,
@@ -26,7 +27,9 @@ import {
   joinsCollection,
   milestonesCollection,
   projectDoc,
+  projectLogoDoc,
   projectsCollection,
+  taskImagesCollection,
   tasksCollection,
 } from "./refs";
 import { deleteUserProfile, readUserProfile } from "./users";
@@ -148,18 +151,22 @@ export function transferOwnership(projectId: string, newOwnerId: string) {
 export async function deleteProjectCompletely(projectId: string, inviteCode: string | null) {
   const { db } = getFirebase();
   const tasks = await getDocs(tasksCollection(db, projectId));
-  const [comments, milestones, gdd, assets, activity, joins] = await Promise.all([
+  const [comments, milestones, gdd, assets, taskImages, activity, joins] = await Promise.all([
     Promise.all(tasks.docs.map((task) => getDocs(commentsCollection(db, projectId, task.id)))),
     getDocs(milestonesCollection(db, projectId)),
     getDocs(gddCollection(db, projectId)),
     getDocs(gddAssetsCollection(db, projectId)),
+    getDocs(taskImagesCollection(db, projectId)),
     getDocs(activityCollection(db, projectId)),
     getDocs(joinsCollection(db, projectId)),
   ]);
 
   await deleteInBatches(db, [
     ...comments.flatMap((snapshot) => snapshot.docs.map((comment) => comment.ref)),
-    ...[tasks, milestones, gdd, assets, activity, joins].flatMap((snapshot) => snapshot.docs.map((item) => item.ref)),
+    ...[tasks, milestones, gdd, assets, taskImages, activity, joins].flatMap((snapshot) =>
+      snapshot.docs.map((item) => item.ref),
+    ),
+    projectLogoDoc(db, projectId),
   ]);
   if (inviteCode) await deleteDoc(inviteCodeDoc(db, inviteCode)).catch(() => undefined);
   await deleteDoc(projectDoc(db, projectId));
@@ -176,7 +183,7 @@ export type OwnedProjectPlan = Record<string, { action: "transfer"; to: string }
  * - sus proyectos propios sin más miembros (enteros) y, en los compartidos,
  *   lo que haya elegido (transferir o eliminar);
  * - su pertenencia al resto (sale y sus tareas quedan sin responsable);
- * - sus invitaciones pendientes y su perfil (`users/{uid}`).
+ * - sus invitaciones pendientes, su foto de perfil y su perfil (`users/{uid}`).
  * Las tareas que creó en proyectos compartidos son del equipo y se quedan,
  * sin datos suyos (solo su id interno, que ya no lleva a ningún perfil).
  */
@@ -228,5 +235,6 @@ export async function deleteMyData(user: User, plan: OwnedProjectPlan, onProgres
   }
 
   onProgress?.("Borrando tu perfil…");
+  await deleteDoc(avatarDoc(db, user.uid)).catch(() => undefined);
   await deleteUserProfile(user.uid);
 }

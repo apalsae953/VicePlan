@@ -1,5 +1,9 @@
+"use client";
+
 import { UserRound } from "lucide-react";
 
+import { useStoredImage } from "@/hooks/use-stored-image";
+import { parseAvatarMarker } from "@/lib/firestore/stored-images";
 import { cn } from "@/lib/utils";
 
 const SIZES = {
@@ -7,6 +11,7 @@ const SIZES = {
   sm: "size-5 text-[9px]",
   md: "size-6 text-[10px]",
   lg: "size-8 text-xs",
+  xl: "size-14 text-base",
 } as const;
 
 export type AvatarSize = keyof typeof SIZES;
@@ -20,8 +25,9 @@ export function initialsOf(name: string | null | undefined, email?: string | nul
 }
 
 /**
- * Avatar circular de una persona: su foto (Google) o sus iniciales. Sin
- * datos (invitado o miembro que ya no está) muestra un icono neutro.
+ * Avatar circular de una persona: la foto que subió a VicePlan
+ * (`avatar:<uid>?v=…`, guardada en Firestore), la de Google o sus iniciales.
+ * Sin datos (invitado o miembro que ya no está) muestra un icono neutro.
  */
 export function MemberAvatar({
   name,
@@ -39,16 +45,19 @@ export function MemberAvatar({
   /** Texto del tooltip nativo (p. ej. "Responsable: Ana"). */
   title?: string;
 }) {
+  const stored = photoURL ? parseAvatarMarker(photoURL) : null;
+  const storedUrl = useStoredImage(stored?.path ?? null, stored?.version);
+  const src = stored ? storedUrl : photoURL;
   const base = cn(
     "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ring-1 ring-border",
     SIZES[size],
     className,
   );
 
-  if (photoURL) {
+  if (src) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element -- avatar externo pequeño, sin optimización necesaria
-      <img src={photoURL} alt="" title={title} referrerPolicy="no-referrer" className={cn(base, "object-cover")} />
+      // eslint-disable-next-line @next/next/no-img-element -- avatar pequeño (Google o blob:), sin optimización necesaria
+      <img src={src} alt="" title={title} referrerPolicy="no-referrer" className={cn(base, "object-cover")} />
     );
   }
   if (!name && !email) {
@@ -58,6 +67,7 @@ export function MemberAvatar({
       </span>
     );
   }
+  // También mientras carga una foto subida: las iniciales evitan el hueco.
   return (
     <span title={title} aria-hidden className={cn(base, "bg-accent font-semibold text-foreground/80")}>
       {initialsOf(name, email)}

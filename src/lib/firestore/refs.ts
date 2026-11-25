@@ -18,6 +18,19 @@ import { collection, doc, type Firestore } from "firebase/firestore";
 export const usersCollection = (db: Firestore) => collection(db, "users");
 export const userDoc = (db: Firestore, uid: string) => doc(db, "users", uid);
 
+/** Foto de perfil subida por el usuario (bytes, ≤ 150 KB). La leen quienes tienen sesión. */
+export const avatarDoc = (db: Firestore, uid: string) => doc(db, "avatars", uid);
+
+/** Imagen del proyecto (bytes). */
+export const projectLogoDoc = (db: Firestore, projectId: string) =>
+  doc(db, "projects", projectId, "branding", "logo");
+
+/** Imágenes adjuntas a las tareas (bytes; la tarea guarda sus ids en `images`). */
+export const taskImagesCollection = (db: Firestore, projectId: string) =>
+  collection(db, "projects", projectId, "taskImages");
+export const taskImageDoc = (db: Firestore, projectId: string, imageId: string) =>
+  doc(db, "projects", projectId, "taskImages", imageId);
+
 export const projectsCollection = (db: Firestore) => collection(db, "projects");
 export const projectDoc = (db: Firestore, projectId: string) => doc(db, "projects", projectId);
 

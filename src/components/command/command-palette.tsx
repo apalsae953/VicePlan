@@ -336,7 +336,7 @@ function PaletteContent({ onClose }: { onClose: () => void }) {
                   <PaletteItem
                     key={item.id}
                     value={`proyecto ${item.name} ${item.key}`}
-                    icon={<ProjectAvatar projectKey={item.key} className="size-4 text-[8px]" />}
+                    icon={<ProjectAvatar projectKey={item.key} projectId={item.id} logo={item.logo} className="size-4 text-[8px]" />}
                     onSelect={() => run(() => router.push(`/projects/${item.id}/board`))}
                   >
                     {item.name}

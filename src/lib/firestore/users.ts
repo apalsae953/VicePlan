@@ -1,4 +1,4 @@
-import { deleteDoc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { deleteDoc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
 import type { User } from "firebase/auth";
 
 import { getFirebase } from "@/lib/firebase";
@@ -23,6 +23,20 @@ export async function upsertUserProfile(user: User) {
       ...(existing.get("createdAt") ? {} : { createdAt: serverTimestamp() }),
     },
     { merge: true },
+  );
+}
+
+/** Versión de la foto de perfil subida (`users/{uid}.avatar`), en tiempo real. */
+export function subscribeOwnAvatar(uid: string, onChange: (version: number | null) => void) {
+  const { db } = getFirebase();
+  return onSnapshot(
+    userDoc(db, uid),
+    (snapshot) => {
+      const version = snapshot.get("avatar");
+      onChange(typeof version === "number" ? version : null);
+    },
+    // Sin permiso o sin conexión: se usa la foto de Google.
+    () => onChange(null),
   );
 }
 

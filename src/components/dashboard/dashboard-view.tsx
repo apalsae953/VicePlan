@@ -27,6 +27,7 @@ import { displayNameOf, useAuth, useCurrentUser } from "@/components/auth/auth-p
 import { useProjects } from "@/components/auth/projects-provider";
 import { ProjectAvatar } from "@/components/layout/project-avatar";
 import { MemberAvatar } from "@/components/members/member-avatar";
+import { UserAvatar } from "@/components/members/user-avatar";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 import { JoinProjectDialog } from "@/components/projects/join-project";
 import { CategoryIcon, PriorityIcon, StatusIcon } from "@/components/tasks/task-icons";
@@ -209,7 +210,12 @@ export function DashboardView({ projects }: { projects: ProjectSummary[] }) {
                         href={`/projects/${project.id}/board`}
                         className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2.5 transition-colors duration-150 hover:border-white/15 hover:bg-accent/40"
                       >
-                        <ProjectAvatar projectKey={project.key} className="size-8 rounded-lg text-sm" />
+                        <ProjectAvatar
+                          projectKey={project.key}
+                          projectId={project.id}
+                          logo={project.logo}
+                          className="size-8 rounded-lg text-sm"
+                        />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-[13px] font-medium">{project.name}</span>
                           <span className="block text-xs text-muted-foreground">
@@ -340,12 +346,7 @@ function AccountMenu() {
             aria-label="Tu cuenta"
             className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <MemberAvatar
-              size="md"
-              name={user.isAnonymous ? null : user.displayName}
-              email={user.email}
-              photoURL={user.photoURL}
-            />
+            <UserAvatar size="md" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">

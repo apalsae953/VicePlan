@@ -80,6 +80,7 @@ export function newProjectFields(user: User) {
     invitedEmails: [] as string[],
     categories: DEFAULT_CATEGORIES,
     inviteCode: null,
+    logo: null,
     taskCounter: 0,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

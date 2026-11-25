@@ -42,6 +42,8 @@ export type ProjectSummary = {
   createdAt: string;
   members: Record<string, MemberProfile>;
   categories: ProjectCategory[];
+  /** Versión de la imagen del proyecto (`branding/logo`), o null si no tiene. */
+  logo: number | null;
 };
 
 export type WorkspaceProject = {
@@ -59,6 +61,8 @@ export type WorkspaceProject = {
   categories: ProjectCategory[];
   /** Código para unirse sin invitación por email (null = desactivado). */
   inviteCode: string | null;
+  /** Versión de la imagen del proyecto (`branding/logo`), o null si no tiene. */
+  logo: number | null;
 };
 
 export type BoardMilestone = {
@@ -127,6 +131,8 @@ export type BoardTask = {
   subtasks: Subtask[];
   /** Ids de las tareas que la bloquean (dependencias). */
   blockedBy: string[];
+  /** Ids de sus imágenes (`projects/{id}/taskImages`), en orden de subida. */
+  images: string[];
   /** Cuándo pasó a Hecho (ISO); null si está abierta. Base del burndown. */
   completedAt: string | null;
   createdBy: string | null;

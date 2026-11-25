@@ -33,11 +33,15 @@ export default function PrivacyPage() {
           puede verla.
         </li>
         <li>
+          <strong>Foto de perfil (opcional):</strong> si subes una, la ven los miembros de tus proyectos. Puedes
+          quitarla cuando quieras en Mi cuenta.
+        </li>
+        <li>
           <strong>Sesión de invitado:</strong> solo un identificador anónimo, sin email ni nombre.
         </li>
         <li>
-          <strong>Contenido que creas:</strong> proyectos, hitos, tareas, comentarios, horas registradas y el documento de
-          diseño, incluidas las imágenes que subas.
+          <strong>Contenido que creas:</strong> proyectos (y su imagen), hitos, tareas, comentarios, horas registradas y el
+          documento de diseño, incluidas las imágenes que subas a las tareas y al documento.
         </li>
         <li>
           <strong>Datos de uso:</strong> el registro de actividad de cada proyecto (quién hizo qué y cuándo), la fecha de
@@ -104,7 +108,7 @@ export default function PrivacyPage() {
       <h2>5. Cuánto tiempo los conservamos</h2>
       <p>
         Mientras mantengas la cuenta. Si la eliminas (Mi cuenta → Datos y privacidad), se borran al momento tu cuenta, tu
-        perfil, tus comentarios y los proyectos que elijas eliminar. En los proyectos compartidos que siguen existiendo,
+        perfil y tu foto, tus comentarios y los proyectos que elijas eliminar. En los proyectos compartidos que siguen existiendo,
         las tareas que creaste se quedan para el equipo sin tu nombre ni tu email, y el registro de actividad conserva solo
         un identificador interno que ya no lleva a ningún perfil. No guardamos copias de seguridad adicionales.
       </p>

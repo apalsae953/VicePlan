@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { GuestSignOutDialog, SaveAccountDialog } from "@/components/auth/account-dialogs";
 import { AccountSettingsDialog } from "@/components/auth/account-settings-dialog";
 import { displayNameOf, useAuth, useCurrentUser } from "@/components/auth/auth-provider";
-import { MemberAvatar, type AvatarSize } from "@/components/members/member-avatar";
+import { UserAvatar } from "@/components/members/user-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,20 +19,6 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { authErrorMessage, resendVerification } from "@/lib/auth";
 import { usingEmulators } from "@/lib/firebase";
-
-/** Avatar del usuario actual: foto de Google, iniciales o icono de invitado. */
-export function UserAvatar({ size = "md", className }: { size?: AvatarSize; className?: string }) {
-  const user = useCurrentUser();
-  return (
-    <MemberAvatar
-      size={size}
-      className={className}
-      name={user.isAnonymous ? null : user.displayName}
-      email={user.email}
-      photoURL={user.photoURL}
-    />
-  );
-}
 
 export function UserMenu() {
   const user = useCurrentUser();

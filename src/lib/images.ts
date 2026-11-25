@@ -29,6 +29,40 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) 
   return new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
 }
 
+/** Lado de las fotos de perfil y de las imágenes de proyecto (cuadradas). */
+export const SQUARE_IMAGE_SIZE = 256;
+/** Tope de bytes de una imagen cuadrada (las reglas admiten hasta 150 KB). */
+const MAX_SQUARE_BYTES = 120 * 1024;
+
+/**
+ * Foto de perfil o imagen de proyecto: recorte cuadrado centrado a 256 px y
+ * WebP. Ocupa unos 10–30 KB, así que cargarla en cada avatar sale barato.
+ */
+export async function compressSquareImage(file: File, size = SQUARE_IMAGE_SIZE): Promise<CompressedImage> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const side = Math.min(bitmap.width, bitmap.height);
+    const sx = Math.round((bitmap.width - side) / 2);
+    const sy = Math.round((bitmap.height - side) / 2);
+    const target = Math.min(size, side);
+    const canvas = document.createElement("canvas");
+    canvas.width = target;
+    canvas.height = target;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("El navegador no puede procesar imágenes.");
+    context.imageSmoothingQuality = "high";
+    context.drawImage(bitmap, sx, sy, side, side, 0, 0, target, target);
+    for (const quality of [0.86, 0.72, 0.55]) {
+      let blob = await canvasToBlob(canvas, "image/webp", quality);
+      if (!blob || blob.type !== "image/webp") blob = await canvasToBlob(canvas, "image/jpeg", quality);
+      if (blob && blob.size <= MAX_SQUARE_BYTES) return { blob, mimeType: blob.type, width: target, height: target };
+    }
+    throw new Error(`«${file.name}» no se puede comprimir lo suficiente.`);
+  } finally {
+    bitmap.close();
+  }
+}
+
 export async function compressImage(file: File): Promise<CompressedImage> {
   const bitmap = await createImageBitmap(file);
   try {

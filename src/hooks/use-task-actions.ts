@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/components/auth/auth-provider";
 import { formatHours, formatTaskId, topPosition } from "@/lib/board";
 import { STATUS_META } from "@/lib/constants";
 import { logActivity, type ActivityInput } from "@/lib/firestore/activity";
+import { deleteImagesOf } from "@/lib/firestore/stored-images";
 import { firestoreErrorMessage } from "@/lib/firestore/errors";
 import { createTask, deleteTask, restoreTask, updateTask } from "@/lib/firestore/tasks";
 import type { BoardTask, TaskDraft, TaskPatch } from "@/lib/types";
@@ -152,13 +153,23 @@ export function useTaskActions() {
       }
       log({ type: "task.deleted", taskId, data: { number: snapshot.number, title: snapshot.title.slice(0, 120) } });
 
+      // Las imágenes de la tarea se borran cuando ya no se puede deshacer.
+      let undone = false;
+      const dropImages = () => {
+        if (!undone && snapshot.images.length) {
+          void deleteImagesOf(project.id, snapshot.images).catch((error) => console.warn("[imágenes]", error));
+        }
+      };
       toast(`${formatTaskId(project.key, snapshot.number)} eliminada`, {
         description: snapshot.title,
         // Margen cómodo para arrepentirse (el valor por defecto, 4 s, se queda corto).
         duration: 8000,
+        onAutoClose: dropImages,
+        onDismiss: dropImages,
         action: {
           label: "Deshacer",
           onClick: async () => {
+            undone = true;
             // Si su hito o su sección del GDD desaparecieron entretanto, se desvincula.
             const { milestones, gddNodes } = get();
             const restored = {

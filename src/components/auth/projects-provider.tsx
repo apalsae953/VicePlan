@@ -9,6 +9,7 @@ import {
   acceptInvitation,
   declineInvitation,
   profileOf,
+  setOwnPhoto,
   subscribeInvitations,
   syncOwnProfile,
 } from "@/lib/firestore/members";
@@ -36,7 +37,7 @@ const ProjectsContext = createContext<ProjectsContextValue | null>(null);
  */
 export function ProjectsProvider({ children }: { children: ReactNode }) {
   const user = useCurrentUser();
-  const { version } = useAuth();
+  const { version, photoURL } = useAuth();
   const router = useRouter();
   const [projectsState, setProjectsState] = useState<{ status: ProjectsContextValue["status"]; projects: ProjectSummary[] }>(
     { status: "loading", projects: [] },
@@ -87,6 +88,9 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
   // Perfil propio dentro de cada proyecto: se actualiza si cambió (nombre, foto…).
   const projects = projectsState.projects;
   useEffect(() => {
+    // Los efectos del hijo corren antes que los de AuthProvider: se fija aquí la
+    // foto vigente para que profileOf no compare con la anterior.
+    setOwnPhoto(user.uid, photoURL);
     const profile = profileOf(user);
     for (const project of projects) {
       const current = project.members[user.uid];
@@ -97,8 +101,9 @@ export function ProjectsProvider({ children }: { children: ReactNode }) {
         current.photoURL !== profile.photoURL;
       if (outdated) void syncOwnProfile(project.id, user).catch((error) => console.warn("[perfil]", error.code));
     }
-    // `version` cambia al guardar la cuenta de invitado o verificar el email.
-  }, [projects, user, version]);
+    // `version` cambia al guardar la cuenta de invitado o verificar el email;
+    // `photoURL`, al subir o quitar la foto de perfil.
+  }, [projects, user, version, photoURL]);
 
   const accept = useCallback(
     async (project: ProjectSummary) => {

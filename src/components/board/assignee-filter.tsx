@@ -5,6 +5,7 @@ import { Check, UserPlus, Users } from "lucide-react";
 
 import { useCurrentUser } from "@/components/auth/auth-provider";
 import { MemberAvatar } from "@/components/members/member-avatar";
+import { UserAvatar } from "@/components/members/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -101,7 +102,7 @@ export function AssigneeFilter({ className }: { className?: string }) {
         {option(
           user.uid,
           <>
-            <MemberAvatar size="xs" name={user.displayName} email={user.email} photoURL={user.photoURL} /> Mis tareas
+            <UserAvatar size="xs" /> Mis tareas
           </>,
           undefined,
           "M",

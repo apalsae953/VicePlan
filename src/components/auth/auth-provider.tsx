@@ -4,7 +4,9 @@ import { createContext, use, useCallback, useEffect, useMemo, useState, type Rea
 import { onIdTokenChanged, signOut as firebaseSignOut, type User } from "firebase/auth";
 
 import { clearLocalCache, getFirebase, isFirebaseConfigured } from "@/lib/firebase";
-import { upsertUserProfile } from "@/lib/firestore/users";
+import { setOwnPhoto } from "@/lib/firestore/members";
+import { avatarMarker } from "@/lib/firestore/stored-images";
+import { subscribeOwnAvatar, upsertUserProfile } from "@/lib/firestore/users";
 
 export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unconfigured";
 
@@ -19,6 +21,13 @@ type AuthContextValue = {
    * mismo y muta por dentro: depender de `version` fuerza el re-render.
    */
   version: number;
+  /**
+   * Foto de perfil efectiva: la subida en VicePlan (`avatar:<uid>?v=…`), la
+   * de Google o null. Es la que ven los demás miembros.
+   */
+  photoURL: string | null;
+  /** Versión de la foto subida (null si no hay): para "Quitar foto". */
+  customPhoto: number | null;
   signOut: () => Promise<void>;
   /** Recarga el usuario y fuerza un token nuevo (p. ej. tras verificar el email). */
   refresh: () => Promise<void>;
@@ -54,6 +63,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Foto subida por el usuario (`users/{uid}.avatar`), en tiempo real.
+  const uid = state.user?.uid ?? null;
+  const [avatar, setAvatar] = useState<{ uid: string; version: number | null } | null>(null);
+  useEffect(() => {
+    if (!uid) return;
+    return subscribeOwnAvatar(uid, (version) => setAvatar({ uid, version }));
+  }, [uid]);
+  const customPhoto = avatar && avatar.uid === uid ? avatar.version : null;
+  const photoURL = uid && customPhoto ? avatarMarker(uid, customPhoto) : (state.user?.photoURL ?? null);
+  // Los perfiles que se publican en los proyectos (profileOf) usan esta foto.
+  useEffect(() => {
+    if (uid) setOwnPhoto(uid, photoURL);
+  }, [uid, photoURL]);
+
   const signOut = useCallback(async () => {
     if (!isFirebaseConfigured()) return;
     await firebaseSignOut(getFirebase().auth);
@@ -71,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ ...state, isGuest: state.user?.isAnonymous ?? false, signOut, refresh }),
-    [state, signOut, refresh],
+    () => ({ ...state, isGuest: state.user?.isAnonymous ?? false, photoURL, customPhoto, signOut, refresh }),
+    [state, photoURL, customPhoto, signOut, refresh],
   );
 
   return <AuthContext value={value}>{children}</AuthContext>;

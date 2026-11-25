@@ -39,12 +39,24 @@ export function isValidEmail(email: string) {
   return EMAIL.test(normalizeEmail(email));
 }
 
+/**
+ * Foto efectiva del usuario actual (la subida en VicePlan o la de Google), que
+ * mantiene al día `AuthProvider`. Así `profileOf` sirve en cualquier sitio
+ * sin pasar la foto por todas las llamadas.
+ */
+let ownPhoto: { uid: string; photoURL: string | null } | null = null;
+
+export function setOwnPhoto(uid: string, photoURL: string | null) {
+  ownPhoto = { uid, photoURL };
+}
+
 /** Perfil público mínimo del usuario para `projects/{id}.members`. */
 export function profileOf(user: User): MemberProfile {
+  const photoURL = ownPhoto && ownPhoto.uid === user.uid ? ownPhoto.photoURL : user.photoURL;
   return {
     name: user.displayName?.trim().slice(0, 200) || null,
     email: user.email ? normalizeEmail(user.email) : null,
-    photoURL: user.photoURL?.slice(0, 2048) || null,
+    photoURL: photoURL?.slice(0, 2048) || null,
   };
 }
 

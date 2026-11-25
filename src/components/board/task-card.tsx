@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps } from "react";
-import { BookText, CalendarDays, Clock, Link2, ListChecks } from "lucide-react";
+import { BookText, CalendarDays, Clock, Image as ImageIcon, Link2, ListChecks } from "lucide-react";
 
 import { MemberAvatar } from "@/components/members/member-avatar";
 import { CategoryBadge, PriorityIcon, useCategory } from "@/components/tasks/task-icons";
@@ -43,7 +43,7 @@ export function TaskCard({ task, projectKey, gdd, assignee, blockedBy = 0, overl
   const isDone = task.status === "DONE";
   const due = describeDue(task);
   const subtasksDone = task.subtasks.filter((subtask) => subtask.done).length;
-  const hasMeta = due || task.subtasks.length > 0 || task.tags.length > 0;
+  const hasMeta = due || task.subtasks.length > 0 || task.tags.length > 0 || task.images.length > 0;
 
   return (
     <div
@@ -153,6 +153,15 @@ export function TaskCard({ task, projectKey, gdd, assignee, blockedBy = 0, overl
             >
               <ListChecks className="size-3" aria-hidden />
               {subtasksDone}/{task.subtasks.length}
+            </span>
+          )}
+          {task.images.length > 0 && (
+            <span
+              className="flex items-center gap-1 tabular-nums"
+              title={task.images.length === 1 ? "1 imagen" : `${task.images.length} imágenes`}
+            >
+              <ImageIcon className="size-3" aria-hidden />
+              {task.images.length}
             </span>
           )}
           {task.tags.slice(0, 3).map((tag) => (

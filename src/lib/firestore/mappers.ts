@@ -117,6 +117,7 @@ export function toProjectSummary(snap: Snapshot): ProjectSummary {
     createdAt: toIso(d.createdAt),
     members: toMemberProfiles(d.members),
     categories: toCategories(d.categories),
+    logo: typeof d.logo === "number" ? d.logo : null,
   };
 }
 
@@ -144,6 +145,7 @@ export function toWorkspaceProject(snap: Snapshot): WorkspaceProject {
     invitedEmails: stringList(d.invitedEmails),
     categories: toCategories(d.categories),
     inviteCode: textOrNull(d.inviteCode),
+    logo: typeof d.logo === "number" ? d.logo : null,
   };
 }
 
@@ -180,6 +182,7 @@ export function toTask(snap: Snapshot): BoardTask {
     tags: stringList(d.tags),
     subtasks: toSubtasks(d.subtasks),
     blockedBy: stringList(d.blockedBy),
+    images: stringList(d.images).slice(0, 12),
     completedAt: d.completedAt ? toIso(d.completedAt) : null,
     createdBy: textOrNull(d.createdBy),
     createdAt: toIso(d.createdAt),

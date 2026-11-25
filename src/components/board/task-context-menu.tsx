@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { useCurrentUser } from "@/components/auth/auth-provider";
 import { MemberAvatar } from "@/components/members/member-avatar";
+import { UserAvatar } from "@/components/members/user-avatar";
 import { MilestoneStatusIcon, PriorityIcon, StatusIcon } from "@/components/tasks/task-icons";
 import {
   ContextMenu,
@@ -110,7 +111,7 @@ function TaskMenuItems({ taskId }: { taskId: string }) {
         </ContextMenuSubTrigger>
         <ContextMenuSubContent className="w-56">
           <ContextMenuItem onSelect={() => void update(taskId, { assigneeId: user.uid })}>
-            <MemberAvatar size="xs" name={user.displayName} email={user.email} photoURL={user.photoURL} /> Asignarme
+            <UserAvatar size="xs" /> Asignarme
             {tick(task.assigneeId === user.uid)}
           </ContextMenuItem>
           <ContextMenuItem onSelect={() => void update(taskId, { assigneeId: null })}>

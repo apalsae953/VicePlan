@@ -40,6 +40,7 @@ import { cn } from "@/lib/utils";
 import type { ProjectSettingsTab } from "@/stores/workspace-store";
 import { CategoriesTab } from "./categories-tab";
 import { InviteCodeSection } from "./invite-code-section";
+import { ProjectImageField } from "./project-image-field";
 import { useWorkspaceStore } from "@/stores/workspace-store-provider";
 
 const TABS: { value: ProjectSettingsTab; label: string; icon: typeof Users }[] = [
@@ -120,6 +121,7 @@ function GeneralTab() {
 
   return (
     <div className="grid gap-4">
+      <ProjectImageField />
       <form onSubmit={submit} className="grid gap-4">
         <div className="grid grid-cols-[1fr_6rem] gap-3">
           <div className="grid gap-1.5">

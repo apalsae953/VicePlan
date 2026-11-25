@@ -238,24 +238,26 @@ export function SubtasksSection({ value, onChange }: { value: Subtask[]; onChang
         ))}
       </ul>
       {value.length < MAX_SUBTASKS && (
-        <form
-          className="mt-1 flex items-center gap-2 px-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            add();
-            inputRef.current?.focus();
-          }}
-        >
+        // Sin <form>: en "Nueva tarea" esto ya está dentro de un formulario.
+        <div className="mt-1 flex items-center gap-2 px-2">
           <Plus className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
           <input
             ref={inputRef}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              // Enter añade la subtarea (y no envía el formulario de la tarea);
+              // Ctrl/⌘+Enter sigue llegando al panel para crear la tarea.
+              if (event.key !== "Enter" || event.ctrlKey || event.metaKey) return;
+              event.preventDefault();
+              add();
+            }}
             placeholder="Añadir subtarea…"
             aria-label="Nueva subtarea (Enter)"
+            enterKeyHint="done"
             className="h-7 min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
           />
-        </form>
+        </div>
       )}
     </section>
   );

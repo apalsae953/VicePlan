@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useTaskActions } from "@/hooks/use-task-actions";
 import { formatHours, formatRelative, formatTaskId } from "@/lib/board";
 import { STATUS_META } from "@/lib/constants";
-import type { BoardTask, TaskDraft, TaskPatch } from "@/lib/types";
+import type { BoardMilestone, BoardTask, TaskDraft, TaskPatch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspace-store-provider";
 import {
@@ -28,6 +28,8 @@ import {
 } from "./task-fields";
 import { TaskDiscussion } from "./task-discussion";
 import { DateField, DependenciesSection, dueHint, SubtasksSection, TagsField } from "./task-extra-fields";
+import { DraftImagesSection, TaskImagesSection, uploadNewTaskImages, useTaskImageUpload } from "./task-images";
+import { imageFilesFrom } from "@/components/images/image-pick-button";
 import { MilestoneStatusIcon } from "./task-icons";
 
 /**
@@ -74,12 +76,58 @@ function TaskEditor({ taskId }: { taskId: string }) {
     );
   }
 
+  return (
+    <TaskEditorBody
+      task={task}
+      projectKey={projectKey}
+      projectId={projectId}
+      milestone={milestones.find((m) => m.id === task.milestoneId)}
+      onClose={closePanel}
+      onSave={(patch) => void update(task.id, patch)}
+      onRemove={() => void remove(task.id)}
+      onOpenGdd={(nodeId) => {
+        closePanel();
+        router.push(`/projects/${projectId}/gdd/${nodeId}`);
+      }}
+    />
+  );
+}
+
+/** Cuerpo del editor (la tarea ya existe): aquí viven los hooks que la necesitan. */
+function TaskEditorBody({
+  task,
+  projectKey,
+  milestone,
+  onClose,
+  onSave,
+  onRemove,
+  onOpenGdd,
+}: {
+  task: BoardTask;
+  projectKey: string;
+  projectId: string;
+  milestone: BoardMilestone | undefined;
+  onClose: () => void;
+  onSave: (patch: TaskPatch) => void;
+  onRemove: () => void;
+  onOpenGdd: (nodeId: string) => void;
+}) {
   const id = formatTaskId(projectKey, task.number);
-  const milestone = milestones.find((m) => m.id === task.milestoneId);
-  const save = (patch: TaskPatch) => void update(task.id, patch);
+  const save = onSave;
+  const closePanel = onClose;
+  const images = useTaskImageUpload(task);
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div
+      className="flex h-full min-h-0 flex-col"
+      // Pegar una imagen (Ctrl+V) en cualquier parte del panel la añade a la tarea.
+      onPaste={(event) => {
+        const files = imageFilesFrom(event.clipboardData.files);
+        if (!files.length) return;
+        event.preventDefault();
+        void images.upload(files);
+      }}
+    >
       <PanelBar onClose={closePanel}>
         <CopyId id={id} />
         <span className="text-muted-foreground/40">/</span>
@@ -92,7 +140,7 @@ function TaskEditor({ taskId }: { taskId: string }) {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => void remove(task.id)}
+              onClick={onRemove}
               className="ml-auto text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
               aria-label="Eliminar tarea"
             >
@@ -126,14 +174,8 @@ function TaskEditor({ taskId }: { taskId: string }) {
           />
         </div>
 
-        <TaskProperties
-          value={task}
-          onChange={save}
-          onOpenGdd={(nodeId) => {
-            closePanel();
-            router.push(`/projects/${projectId}/gdd/${nodeId}`);
-          }}
-        />
+        <TaskImagesSection task={task} upload={images.upload} uploading={images.uploading} />
+        <TaskProperties value={task} onChange={save} onOpenGdd={onOpenGdd} />
         <SubtasksSection value={task.subtasks} onChange={(subtasks) => save({ subtasks })} />
         <DependenciesSection task={task} onChange={(blockedBy) => save({ blockedBy })} />
         <HoursSection task={task} onChange={save} />
@@ -254,9 +296,12 @@ function TaskCreator({ defaults }: { defaults: Partial<TaskDraft> }) {
   const projectKey = useWorkspaceStore((s) => s.project.key);
   const firstCategory = useWorkspaceStore((s) => s.project.categories[0]?.id ?? "PROGRAMMING");
   const closePanel = useWorkspaceStore((s) => s.closePanel);
+  const projectId = useWorkspaceStore((s) => s.project.id);
+  const user = useCurrentUser();
   const { create } = useTaskActions();
   const [pending, startTransition] = useTransition();
   const [showError, setShowError] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
   const [draft, setDraft] = useState<TaskDraft>(() => ({
     title: "",
     description: null,
@@ -286,7 +331,9 @@ function TaskCreator({ defaults }: { defaults: Partial<TaskDraft> }) {
     }
     startTransition(async () => {
       const created = await create(draft);
-      if (created) closePanel();
+      if (!created) return;
+      closePanel();
+      uploadNewTaskImages(projectId, created.id, user.uid, files, formatTaskId(projectKey, created.number));
     });
   }
 
@@ -302,6 +349,12 @@ function TaskCreator({ defaults }: { defaults: Partial<TaskDraft> }) {
           event.preventDefault();
           submit();
         }
+      }}
+      onPaste={(event) => {
+        const pasted = imageFilesFrom(event.clipboardData.files);
+        if (!pasted.length) return;
+        event.preventDefault();
+        setFiles((current) => [...current, ...pasted].slice(0, 12));
       }}
     >
       <PanelBar onClose={closePanel}>
@@ -336,6 +389,7 @@ function TaskCreator({ defaults }: { defaults: Partial<TaskDraft> }) {
           />
         </div>
 
+        <DraftImagesSection files={files} onChange={setFiles} />
         <TaskProperties value={draft} onChange={patch} />
         <SubtasksSection value={draft.subtasks} onChange={(subtasks) => patch({ subtasks })} />
 

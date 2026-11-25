@@ -48,7 +48,12 @@ export function ProjectSwitcher() {
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <span className="relative">
-                <ProjectAvatar projectKey={project.key} className="size-8 rounded-lg text-sm" />
+                <ProjectAvatar
+                  projectKey={project.key}
+                  projectId={project.id}
+                  logo={project.logo}
+                  className="size-8 rounded-lg text-sm"
+                />
                 {invitations.length > 0 && (
                   <span
                     className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-primary ring-2 ring-sidebar"
@@ -100,7 +105,7 @@ export function ProjectSwitcher() {
             {projects.map((item) => (
               <DropdownMenuItem key={item.id} asChild>
                 <Link href={`/projects/${item.id}/board`} className="gap-2.5">
-                  <ProjectAvatar projectKey={item.key} className="size-5 text-[10px]" />
+                  <ProjectAvatar projectKey={item.key} projectId={item.id} logo={item.logo} className="size-5 text-[10px]" />
                   <span className="truncate">{item.name}</span>
                   {item.id === project.id ? (
                     <Check className="ml-auto" aria-label="Proyecto actual" />

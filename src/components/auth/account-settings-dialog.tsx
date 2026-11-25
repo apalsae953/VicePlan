@@ -5,6 +5,7 @@ import {
   Check,
   CloudUpload,
   Download,
+  ImagePlus,
   KeyRound,
   Loader2,
   MailCheck,
@@ -17,7 +18,8 @@ import {
 import { toast } from "sonner";
 
 import { LegalLinks } from "@/components/legal/legal-links";
-import { MemberAvatar } from "@/components/members/member-avatar";
+import { ImagePickButton } from "@/components/images/image-pick-button";
+import { UserAvatar } from "@/components/members/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,9 @@ import {
 import { clearLocalCache } from "@/lib/firebase";
 import { deleteMyData, exportMyData, type OwnedProjectPlan } from "@/lib/firestore/account";
 import { firestoreErrorMessage } from "@/lib/firestore/errors";
+import { imageErrorMessage } from "@/lib/firestore/gdd-assets";
 import { memberDisplayName } from "@/lib/firestore/mappers";
+import { removeAvatar, uploadAvatar } from "@/lib/firestore/stored-images";
 import { newPasswordError } from "@/lib/password";
 import { cn } from "@/lib/utils";
 import { displayNameOf, useAuth, useCurrentUser } from "./auth-provider";
@@ -157,18 +161,7 @@ function ProfileTab({ onSaveAccount }: { onSaveAccount: () => void }) {
 
   return (
     <div className="grid gap-5">
-      <div className="flex items-center gap-3">
-        <MemberAvatar
-          size="lg"
-          name={user.isAnonymous ? null : user.displayName}
-          email={user.email}
-          photoURL={user.photoURL}
-        />
-        <div className="min-w-0 leading-tight">
-          <p className="truncate text-[13px]">{displayNameOf(user)}</p>
-          <p className="truncate text-xs text-muted-foreground">{isGuest ? "Sesión de invitado" : user.email}</p>
-        </div>
-      </div>
+      <ProfilePhoto />
 
       {isGuest ? (
         <div className="grid gap-3 rounded-lg border bg-card p-3 text-[13px] text-muted-foreground">
@@ -247,6 +240,67 @@ function ProfileTab({ onSaveAccount }: { onSaveAccount: () => void }) {
           )}
         </ul>
       </section>
+    </div>
+  );
+}
+
+/** Foto de perfil opcional: se sube recortada (256 px) y la ven los miembros de tus proyectos. */
+function ProfilePhoto() {
+  const user = useCurrentUser();
+  const { isGuest, customPhoto } = useAuth();
+  const [busy, startBusy] = useTransition();
+  const hasGoogle = signInMethods(user).google && !!user.photoURL;
+
+  function upload(files: File[]) {
+    startBusy(async () => {
+      try {
+        await uploadAvatar(user.uid, files[0]);
+        toast.success("Foto de perfil actualizada", { description: "Tu equipo la verá en todos tus proyectos." });
+      } catch (error) {
+        toast.error(imageErrorMessage(error));
+      }
+    });
+  }
+
+  function remove() {
+    startBusy(async () => {
+      try {
+        await removeAvatar(user.uid);
+        toast("Foto de perfil quitada");
+      } catch (error) {
+        toast.error(firestoreErrorMessage(error, "No se pudo quitar la foto"));
+      }
+    });
+  }
+
+  return (
+    <div className="flex items-center gap-4">
+      <UserAvatar size="xl" />
+      <div className="grid min-w-0 gap-1.5">
+        <div className="leading-tight">
+          <p className="truncate text-[13px]">{displayNameOf(user)}</p>
+          <p className="truncate text-xs text-muted-foreground">{isGuest ? "Sesión de invitado" : user.email}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ImagePickButton variant="outline" size="xs" className="gap-1.5" disabled={busy} onFiles={upload}>
+            {busy ? <Loader2 className="animate-spin" /> : <ImagePlus />}
+            {customPhoto ? "Cambiar foto" : "Subir foto"}
+          </ImagePickButton>
+          {customPhoto && (
+            <Button type="button" variant="ghost" size="xs" disabled={busy} onClick={remove}>
+              Quitar
+            </Button>
+          )}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Opcional.{" "}
+          {customPhoto
+            ? "La ven los miembros de tus proyectos."
+            : hasGoogle
+              ? "Si no subes ninguna, se usa la de tu cuenta de Google."
+              : "Si no subes ninguna, se muestran tus iniciales."}
+        </p>
+      </div>
     </div>
   );
 }
