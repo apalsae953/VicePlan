@@ -10,7 +10,7 @@ export default function LegalNoticePage() {
   return (
     <LegalPage
       title="Aviso legal"
-      intro="Información general sobre el titular de ControlTrabajo, conforme al artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE)."
+      intro="Información general sobre el titular de VicePlan, conforme al artículo 10 de la Ley 34/2002, de servicios de la sociedad de la información y de comercio electrónico (LSSI-CE)."
     >
       <h2>Titular</h2>
       <ul>
@@ -26,14 +26,14 @@ export default function LegalNoticePage() {
 
       <h2>Objeto</h2>
       <p>
-        ControlTrabajo es una aplicación web gratuita de gestión de proyectos para el desarrollo de videojuegos. Su uso se
+        VicePlan es una aplicación web gratuita de gestión de proyectos para el desarrollo de videojuegos. Su uso se
         rige por los <Link href="/legal/terminos">términos de uso</Link> y la{" "}
         <Link href="/legal/privacidad">política de privacidad</Link>.
       </p>
 
       <h2>Propiedad intelectual</h2>
       <p>
-        El código, el diseño y el nombre de ControlTrabajo pertenecen a su titular o se usan con licencia. Los contenidos
+        El código, el diseño y el nombre de VicePlan pertenecen a su titular o se usan con licencia. Los contenidos
         que crean los usuarios (tareas, documentos, imágenes) son de sus autores, que responden de ellos.
       </p>
 

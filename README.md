@@ -1,4 +1,4 @@
-# ControlTrabajo
+# VicePlan
 
 Gestión ágil de proyectos para estudios de videojuegos: tableros Kanban por
 milestone, tareas por disciplina con responsable y registro de horas, un GDD
@@ -38,6 +38,10 @@ Inspirado en HacknPlan:
   Authentication → Configuración → Dominios autorizados.
 
 ## Puesta en marcha
+
+En producción: **https://vice-plan.vercel.app** (Vercel, desde la rama `main`
+de GitHub; la configuración de Firebase va en las variables de entorno del
+proyecto de Vercel).
 
 ### Con el proyecto de Firebase (`controltrabajo-2xdnk`)
 

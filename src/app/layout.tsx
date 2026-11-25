@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ControlTrabajo",
-    template: "%s · ControlTrabajo",
+    default: "VicePlan",
+    template: "%s · VicePlan",
   },
   description:
     "Gestión ágil de proyectos para el desarrollo de videojuegos: tableros, hitos y documento de diseño.",

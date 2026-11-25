@@ -1,4 +1,4 @@
-# ControlTrabajo
+# VicePlan
 
 Herramienta de gestión ágil de proyectos orientada al desarrollo de videojuegos
 (inspirada en HacknPlan): tableros Kanban por milestone, tareas por disciplina
@@ -75,19 +75,38 @@ debe respetarlo; ante la duda, menos.
 
 ## Proyecto de Firebase
 
+- **Nombre:** la app se llama **VicePlan** (antes ControlTrabajo). El id del
+  proyecto de Firebase sigue siendo `controltrabajo-2xdnk` (no se puede
+  cambiar); su nombre visible, el remitente de los emails y la pantalla de
+  consentimiento de Google ya dicen VicePlan.
+- **Producción en Vercel:** proyecto `vice-plan` (equipo
+  `apalsae953s-projects`) → https://vice-plan.vercel.app, conectado al repo
+  GitHub `apalsae953/VicePlan` (rama `main`). Las `NEXT_PUBLIC_FIREBASE_*`
+  están en las variables de entorno del proyecto de Vercel (sin ellas sale
+  "Falta configurar Firebase"). Desplegar: push a `main` o
+  `vercel deploy --prod` (carpeta enlazada en `.vercel/`; `.vercelignore`
+  evita subir `.env*`).
+- **Pantalla de consentimiento de Google** (Google Cloud → Google Auth
+  Platform): externa y en producción, nombre VicePlan, página principal,
+  privacidad y términos en vice-plan.vercel.app, dominios autorizados
+  `controltrabajo-2xdnk.firebaseapp.com` y `vice-plan.vercel.app`, contacto del
+  desarrollador relleno. Si falta algún dato obligatorio, Google responde con
+  un **error 500** tras elegir la cuenta. Al cambiar de dominio, actualizarla
+  junto con los dominios autorizados de Firebase Auth.
+
 - Proyecto real: **`controltrabajo-2xdnk`** (alias `default` en `.firebaserc`),
-  Firestore `(default)` en `eur3`, app web "ControlTrabajo Web". Su configuración
+  Firestore `(default)` en `eur3`, app web "VicePlan Web". Su configuración
   está en `.env.local` (no se versiona).
 - Proveedores de acceso activos: Google, email/contraseña y anónimo. Se gestionan
   con la sección `auth` de `firebase.json` (`firebase deploy --only auth`); Google
   necesita además `supportEmail`, que no se guarda en el repo.
 - **Configuración de Auth** (no está en `firebase.json`; se cambió por la API
   `identitytoolkit admin/v2 …/config`): dominios autorizados `localhost`,
-  `127.0.0.1`, `*.firebaseapp.com`, `*.web.app` (al publicar la app en otro
+  `127.0.0.1`, `vice-plan.vercel.app`, `*.firebaseapp.com`, `*.web.app` (al publicar la app en otro
   dominio, **añadirlo** o Google fallará con `auth/unauthorized-domain`);
   política de contraseñas ENFORCE (mín. 8, minúscula + número, igual que
   `lib/password.ts`); protección contra enumeración de emails activa; emails en
-  español (`defaultLocale es`, remitente "ControlTrabajo"). El texto de las
+  español (`defaultLocale es`, remitente "VicePlan"). El texto de las
   plantillas no se puede cambiar por API (solo en la consola).
 - **Emails (verificar, recuperar contraseña):** los envía Firebase Auth gratis
   en Spark desde `noreply@controltrabajo-2xdnk.firebaseapp.com`; pueden caer

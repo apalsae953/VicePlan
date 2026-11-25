@@ -10,7 +10,7 @@ export default function PrivacyPage() {
   return (
     <LegalPage
       title="Política de privacidad"
-      intro="Qué datos personales trata ControlTrabajo, para qué, durante cuánto tiempo y cómo puedes ejercer tus derechos, conforme al Reglamento General de Protección de Datos (RGPD) y a la Ley Orgánica 3/2018 (LOPDGDD)."
+      intro="Qué datos personales trata VicePlan, para qué, durante cuánto tiempo y cómo puedes ejercer tus derechos, conforme al Reglamento General de Protección de Datos (RGPD) y a la Ley Orgánica 3/2018 (LOPDGDD)."
     >
       <h2>1. Responsable del tratamiento</h2>
       <ul>

@@ -18,13 +18,13 @@ const ITEMS = [
     duration: "Se borra al cerrar sesión",
   },
   {
-    name: "controltrabajo:terms-accepted",
+    name: "viceplan:terms-accepted",
     kind: "sessionStorage · técnica",
     purpose: "Anotar que aceptaste los términos al entrar, hasta guardarlo en tu perfil.",
     duration: "Segundos (o hasta cerrar la pestaña)",
   },
   {
-    name: "controltrabajo:last-project",
+    name: "viceplan:last-project",
     kind: "localStorage · preferencia",
     purpose: "Abrir el último proyecto que usaste.",
     duration: "Hasta que borras los datos del navegador",
@@ -41,7 +41,7 @@ export default function CookiesPage() {
   return (
     <LegalPage
       title="Política de cookies"
-      intro="ControlTrabajo no usa cookies de publicidad ni de analítica, ni propias ni de terceros."
+      intro="VicePlan no usa cookies de publicidad ni de analítica, ni propias ni de terceros."
     >
       <p>
         Solo guarda en tu navegador lo imprescindible para funcionar y un par de preferencias que eliges tú al usar la
@@ -82,7 +82,7 @@ export default function CookiesPage() {
         <a href="https://policies.google.com/technologies/cookies?hl=es" target="_blank" rel="noreferrer noopener">
           política de cookies
         </a>
-        . ControlTrabajo no puede leerlas.
+        . VicePlan no puede leerlas.
       </p>
 
       <h2>Cómo borrarlo</h2>

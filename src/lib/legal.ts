@@ -5,7 +5,7 @@
  */
 
 export const LEGAL = {
-  appName: "ControlTrabajo",
+  appName: "VicePlan",
   /** Nombre y apellidos (o razón social) de quien ofrece la app: responsable del tratamiento. */
   owner: "Snoker Studios" as string | null,
   /**
@@ -45,7 +45,7 @@ export const legalIncomplete = !LEGAL.owner || !LEGAL.contactEmail;
  * "Al continuar…" en Google/invitado) lo deja anotado para esta pestaña; la
  * app lo guarda en su perfil al entrar (ver `TermsGate`).
  */
-const PENDING_KEY = "controltrabajo:terms-accepted";
+const PENDING_KEY = "viceplan:terms-accepted";
 
 export function markTermsAccepted() {
   try {

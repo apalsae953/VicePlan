@@ -386,7 +386,7 @@ function SecurityTab() {
       <p className="flex gap-2 border-t pt-4 text-xs leading-relaxed text-muted-foreground">
         <ShieldCheck className="mt-px size-3.5 shrink-0" aria-hidden />
         Las contraseñas las guarda Firebase Authentication cifradas con un hash: nadie puede verlas, tampoco quien
-        administra ControlTrabajo. Al cambiarla, las demás sesiones abiertas se cierran en menos de una hora.
+        administra VicePlan. Al cambiarla, las demás sesiones abiertas se cierran en menos de una hora.
       </p>
     </div>
   );
@@ -406,7 +406,7 @@ function PrivacyTab({ onDelete }: { onDelete: () => void }) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `controltrabajo-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
+        link.download = `viceplan-mis-datos-${new Date().toISOString().slice(0, 10)}.json`;
         link.click();
         URL.revokeObjectURL(url);
         toast.success("Datos descargados");

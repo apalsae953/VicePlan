@@ -16,7 +16,7 @@ export default function LegalLayout({ children }: LayoutProps<"/legal">) {
             <span className="flex size-6 items-center justify-center rounded-md border bg-card">
               <SquareKanban className="size-3.5 text-primary" aria-hidden />
             </span>
-            ControlTrabajo
+            VicePlan
           </Link>
           <LegalLinks className="hidden sm:flex" />
         </div>

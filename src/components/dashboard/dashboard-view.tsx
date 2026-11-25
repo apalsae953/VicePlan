@@ -103,7 +103,7 @@ export function DashboardView({ projects }: { projects: ProjectSummary[] }) {
         <span className="flex size-6 items-center justify-center rounded-md border bg-card">
           <SquareKanban className="size-3.5 text-primary" aria-hidden />
         </span>
-        <span className="text-[13px] font-medium">ControlTrabajo</span>
+        <span className="text-[13px] font-medium">VicePlan</span>
         <span className="text-muted-foreground/40">/</span>
         <span className="text-[13px] text-muted-foreground">Mi panel</span>
         <div className="ml-auto flex items-center gap-1.5">

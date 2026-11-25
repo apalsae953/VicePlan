@@ -4,7 +4,7 @@
  * try/catch y la app funciona igual sin ellas.
  */
 
-const LAST_PROJECT_KEY = "controltrabajo:last-project";
+const LAST_PROJECT_KEY = "viceplan:last-project";
 
 export function getLastProjectId() {
   try {

@@ -41,7 +41,7 @@ const AUTH_ERRORS: Record<string, string> = {
   "auth/missing-email": "Escribe tu email.",
   "auth/missing-password": "Escribe tu contraseña.",
   "auth/email-already-in-use": "Ya existe una cuenta con ese email. Inicia sesión o recupera la contraseña.",
-  "auth/credential-already-in-use": "Esa cuenta ya está registrada en ControlTrabajo.",
+  "auth/credential-already-in-use": "Esa cuenta ya está registrada en VicePlan.",
   "auth/account-exists-with-different-credential":
     "Ya hay una cuenta con ese email. Entra con el método que usaste al crearla.",
   "auth/provider-already-linked": "Ese método de acceso ya está en tu cuenta.",

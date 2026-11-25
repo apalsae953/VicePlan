@@ -123,7 +123,7 @@ function Welcome({ failed }: { failed: boolean }) {
             </div>
             <div className="min-w-0 flex-1 space-y-1">
               <p className="text-sm font-medium">Unirme con un código</p>
-              <p className="text-[13px] text-muted-foreground">Si tu equipo ya usa ControlTrabajo, pega su código o enlace.</p>
+              <p className="text-[13px] text-muted-foreground">Si tu equipo ya usa VicePlan, pega su código o enlace.</p>
             </div>
             <ArrowRight
               className="mt-2.5 size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-hover:translate-x-0.5"

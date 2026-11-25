@@ -10,18 +10,18 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Términos de uso"
-      intro="Las condiciones para usar ControlTrabajo. Al crear una cuenta, entrar con Google o como invitado, las aceptas."
+      intro="Las condiciones para usar VicePlan. Al crear una cuenta, entrar con Google o como invitado, las aceptas."
     >
       <h2>1. El servicio</h2>
       <p>
-        ControlTrabajo es una herramienta gratuita de gestión de proyectos para estudios de videojuegos: tableros por
+        VicePlan es una herramienta gratuita de gestión de proyectos para estudios de videojuegos: tableros por
         hito, tareas, registro de horas, métricas y un documento de diseño compartido. La ofrece{" "}
         <Fill value={LEGAL.owner} label="titular" /> (ver el <Link href="/legal/aviso-legal">aviso legal</Link>).
       </p>
 
       <h2>2. Quién puede usarlo</h2>
       <p>
-        Necesitas al menos {MIN_AGE} años, o el consentimiento de tu madre, padre o tutor. Si usas ControlTrabajo en nombre
+        Necesitas al menos {MIN_AGE} años, o el consentimiento de tu madre, padre o tutor. Si usas VicePlan en nombre
         de una empresa o estudio, confirmas que puedes aceptar estos términos por ella.
       </p>
 
@@ -36,7 +36,7 @@ export default function TermsPage() {
       </ul>
 
       <h2>4. Uso aceptable</h2>
-      <p>No puedes usar ControlTrabajo para:</p>
+      <p>No puedes usar VicePlan para:</p>
       <ul>
         <li>subir contenido ilegal, ofensivo o que infrinja derechos de otras personas (propiedad intelectual, imagen, intimidad);</li>
         <li>intentar acceder a cuentas o proyectos ajenos, o saltarte las medidas de seguridad;</li>
@@ -53,7 +53,7 @@ export default function TermsPage() {
 
       <h2>6. Servicio gratuito y sus límites</h2>
       <p>
-        ControlTrabajo es gratis y se ofrece tal cual, sobre el plan gratuito de Firebase, que tiene cuotas diarias: si se
+        VicePlan es gratis y se ofrece tal cual, sobre el plan gratuito de Firebase, que tiene cuotas diarias: si se
         superan, el servicio puede dejar de responder hasta el día siguiente. Podemos cambiarlo, pausarlo o cerrarlo; si
         lo cerramos, avisaremos con antelación razonable para que descargues tus datos (Mi cuenta → Datos y privacidad).
         Te recomendamos guardar copia de lo importante.

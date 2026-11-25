@@ -106,7 +106,7 @@ export async function exportMyData(user: User) {
 
   return {
     exportedAt: new Date().toISOString(),
-    app: "ControlTrabajo",
+    app: "VicePlan",
     account: {
       uid: user.uid,
       displayName: user.displayName,

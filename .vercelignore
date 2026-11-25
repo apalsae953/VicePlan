@@ -1,0 +1,9 @@
+# Lo que nunca se sube a Vercel con `vercel deploy` (la configuración de
+# Firebase va en las variables de entorno del proyecto de Vercel).
+.env*
+!.env.example
+.claude
+.next
+node_modules
+firestore-debug.log
+*.tsbuildinfo

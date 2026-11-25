@@ -65,7 +65,7 @@ export function TermsGate() {
         <AlertDialogHeader>
           <AlertDialogTitle className="text-sm">Términos de uso y privacidad</AlertDialogTitle>
           <AlertDialogDescription className="text-[13px] leading-relaxed">
-            Para seguir usando ControlTrabajo, revisa y acepta los{" "}
+            Para seguir usando VicePlan, revisa y acepta los{" "}
             <LegalLink href="/legal/terminos">términos de uso</LegalLink> y la{" "}
             <LegalLink href="/legal/privacidad">política de privacidad</LegalLink>. Explican qué datos guardamos, para
             qué y cómo borrarlos.

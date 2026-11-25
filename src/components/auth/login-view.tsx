@@ -110,7 +110,7 @@ export function LoginView() {
           <span className="flex size-6 items-center justify-center rounded-md border bg-card">
             <SquareKanban className="size-3.5 text-primary" aria-hidden />
           </span>
-          ControlTrabajo
+          VicePlan
           {usingEmulators && (
             <span className="ml-1 rounded-sm border px-1.5 py-px font-mono text-[10px] font-normal text-warning">
               emulador
@@ -190,7 +190,7 @@ function ChooseStep({
 }) {
   const busy = pending !== null;
   return (
-    <StepLayout title="Inicia sesión en ControlTrabajo" description="Elige cómo quieres entrar.">
+    <StepLayout title="Inicia sesión en VicePlan" description="Elige cómo quieres entrar.">
       <div className="space-y-2">
         <Button type="button" variant="outline" className="h-9 w-full gap-2.5" onClick={onGoogle} disabled={busy}>
           {pending === "google" ? <Loader2 className="animate-spin" /> : <GoogleIcon />}
@@ -448,7 +448,7 @@ function ResetStep({
           <div className="space-y-2">
             <p>
               Si existe una cuenta con <span className="break-all text-foreground">{sentTo}</span>, te llegará un email de
-              ControlTrabajo con un enlace para elegir una contraseña nueva.
+              VicePlan con un enlace para elegir una contraseña nueva.
             </p>
             <p className="text-xs">
               Tarda uno o dos minutos. Si no lo ves, mira en <span className="text-foreground">spam</span> o{" "}

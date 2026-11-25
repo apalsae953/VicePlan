@@ -16,7 +16,7 @@ export const PASSWORD_RULES = [
 type RuleId = (typeof PASSWORD_RULES)[number]["id"];
 
 /** Contraseñas demasiado obvias que no deberían aceptarse aunque cumplan las reglas. */
-const COMMON = ["password1", "contraseña1", "qwerty123", "12345678a", "abc12345", "controltrabajo1", "iloveyou1"];
+const COMMON = ["password1", "contraseña1", "qwerty123", "12345678a", "abc12345", "controltrabajo1", "viceplan1", "iloveyou1"];
 
 export function checkPassword(password: string) {
   const rules: Record<RuleId, boolean> = {
