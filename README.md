@@ -20,6 +20,8 @@ Inspirado en HacknPlan:
 - **Equipo**: invitación por email o por código / enlace `/unirse/CÓDIGO`.
 - **Documento de diseño** jerárquico con imágenes, enlazado a las tareas.
 - **Métricas**: horas por disciplina, estados, burndown y velocidad.
+- **Imágenes**: foto de perfil y del proyecto (opcionales), imágenes en tareas (portada en la tarjeta, visor en grande) y en el documento de diseño.
+- **Avisos por email** (asignaciones, comentarios, invitaciones, seguridad), configurables en Mi cuenta → Notificaciones. Necesitan `SMTP_USER` y `SMTP_PASS` (contraseña de aplicación de Gmail) en Vercel.
 
 ## Cuentas, seguridad y privacidad
 
@@ -39,7 +41,7 @@ Inspirado en HacknPlan:
 
 ## Puesta en marcha
 
-En producción: **https://vice-plan.vercel.app** (Vercel, desde la rama `main`
+En producción: **https://viceplan.vercel.app** (Vercel, desde la rama `main`
 de GitHub; la configuración de Firebase va en las variables de entorno del
 proyecto de Vercel).
 

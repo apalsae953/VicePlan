@@ -11,6 +11,7 @@ import { PRIORITY_META } from "@/lib/constants";
 import { memberDisplayName } from "@/lib/firestore/mappers";
 import type { BoardTask, MemberProfile } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { TaskCover } from "./task-cover";
 
 export type CardGddLink = { title: string; path: string[]; number: string } | null;
 
@@ -56,6 +57,7 @@ export function TaskCard({ task, projectKey, gdd, assignee, blockedBy = 0, overl
       )}
       {...props}
     >
+      {task.images.length > 0 && <TaskCover imageId={task.images[0]} />}
       <div className="flex items-center gap-2">
         <span className="font-mono text-[11px] text-muted-foreground">{formatTaskId(projectKey, task.number)}</span>
         {blockedBy > 0 && !isDone && (

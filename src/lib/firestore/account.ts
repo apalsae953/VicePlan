@@ -2,6 +2,7 @@ import {
   Bytes,
   collectionGroup,
   deleteDoc,
+  doc,
   getDocs,
   query,
   serverTimestamp,
@@ -30,6 +31,7 @@ import {
   projectLogoDoc,
   projectsCollection,
   taskImagesCollection,
+  taskThumbsCollection,
   tasksCollection,
 } from "./refs";
 import { deleteUserProfile, readUserProfile } from "./users";
@@ -151,19 +153,20 @@ export function transferOwnership(projectId: string, newOwnerId: string) {
 export async function deleteProjectCompletely(projectId: string, inviteCode: string | null) {
   const { db } = getFirebase();
   const tasks = await getDocs(tasksCollection(db, projectId));
-  const [comments, milestones, gdd, assets, taskImages, activity, joins] = await Promise.all([
+  const [comments, milestones, gdd, assets, taskImages, taskThumbs, activity, joins] = await Promise.all([
     Promise.all(tasks.docs.map((task) => getDocs(commentsCollection(db, projectId, task.id)))),
     getDocs(milestonesCollection(db, projectId)),
     getDocs(gddCollection(db, projectId)),
     getDocs(gddAssetsCollection(db, projectId)),
     getDocs(taskImagesCollection(db, projectId)),
+    getDocs(taskThumbsCollection(db, projectId)),
     getDocs(activityCollection(db, projectId)),
     getDocs(joinsCollection(db, projectId)),
   ]);
 
   await deleteInBatches(db, [
     ...comments.flatMap((snapshot) => snapshot.docs.map((comment) => comment.ref)),
-    ...[tasks, milestones, gdd, assets, taskImages, activity, joins].flatMap((snapshot) =>
+    ...[tasks, milestones, gdd, assets, taskImages, taskThumbs, activity, joins].flatMap((snapshot) =>
       snapshot.docs.map((item) => item.ref),
     ),
     projectLogoDoc(db, projectId),
@@ -236,5 +239,6 @@ export async function deleteMyData(user: User, plan: OwnedProjectPlan, onProgres
 
   onProgress?.("Borrando tu perfil…");
   await deleteDoc(avatarDoc(db, user.uid)).catch(() => undefined);
+  await deleteDoc(doc(db, "notificationSettings", user.uid)).catch(() => undefined);
   await deleteUserProfile(user.uid);
 }

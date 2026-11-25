@@ -30,6 +30,11 @@ export const taskImagesCollection = (db: Firestore, projectId: string) =>
   collection(db, "projects", projectId, "taskImages");
 export const taskImageDoc = (db: Firestore, projectId: string, imageId: string) =>
   doc(db, "projects", projectId, "taskImages", imageId);
+/** Miniatura de cada imagen de tarea (misma id), para la tarjeta y la rejilla. */
+export const taskThumbsCollection = (db: Firestore, projectId: string) =>
+  collection(db, "projects", projectId, "taskThumbs");
+export const taskThumbDoc = (db: Firestore, projectId: string, imageId: string) =>
+  doc(db, "projects", projectId, "taskThumbs", imageId);
 
 export const projectsCollection = (db: Firestore) => collection(db, "projects");
 export const projectDoc = (db: Firestore, projectId: string) => doc(db, "projects", projectId);

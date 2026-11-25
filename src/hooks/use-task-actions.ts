@@ -12,6 +12,7 @@ import { firestoreErrorMessage } from "@/lib/firestore/errors";
 import { createTask, deleteTask, restoreTask, updateTask } from "@/lib/firestore/tasks";
 import type { BoardTask, TaskDraft, TaskPatch } from "@/lib/types";
 import { useWorkspaceStoreApi } from "@/stores/workspace-store-provider";
+import { notify } from "@/lib/notify";
 
 /** Campos editables de una tarea existente (para duplicarla). */
 function draftOf(task: BoardTask): TaskDraft {
@@ -83,6 +84,10 @@ export function useTaskActions() {
       }
       if (patch.assigneeId !== undefined && patch.assigneeId !== previous.assigneeId) {
         log({ type: "task.assigned", taskId, data: { ...base, to: patch.assigneeId } });
+        // Email a la persona asignada (si no se asigna a sí mismo).
+        if (patch.assigneeId && patch.assigneeId !== user.uid) {
+          notify({ type: "assigned", projectId: get().project.id, taskId });
+        }
       }
       if (patch.milestoneId !== undefined && patch.milestoneId !== previous.milestoneId) {
         const milestone = get().milestones.find((m) => m.id === patch.milestoneId);
@@ -98,6 +103,9 @@ export function useTaskActions() {
         const created = await createTask(project.id, user.uid, { ...draft, position });
         toast.success(`${formatTaskId(project.key, created.number)} creada`, { description: draft.title.trim() });
         log({ type: "task.created", taskId: created.id, data: { number: created.number, title: draft.title.trim().slice(0, 120) } });
+        if (draft.assigneeId && draft.assigneeId !== user.uid) {
+          notify({ type: "assigned", projectId: project.id, taskId: created.id });
+        }
         return created;
       } catch (error) {
         toast.error(

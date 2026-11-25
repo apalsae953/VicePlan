@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 
 import { getFirebase } from "@/lib/firebase";
-import { compressImage, compressSquareImage, imageRejection, type CompressedImage } from "@/lib/images";
+import { compressImage, compressSquareImage, compressThumbnail, imageRejection, type CompressedImage } from "@/lib/images";
 import {
   avatarDoc,
   projectDoc,
@@ -20,6 +20,7 @@ import {
   taskDoc,
   taskImageDoc,
   taskImagesCollection,
+  taskThumbDoc,
   userDoc,
 } from "./refs";
 
@@ -164,13 +165,26 @@ export function taskImagePath(projectId: string, imageId: string) {
   return `projects/${projectId}/taskImages/${imageId}`;
 }
 
+/** Las imágenes subidas antes de existir las miniaturas no tienen: se usa la grande. */
+export function taskThumbPath(projectId: string, imageId: string) {
+  return `projects/${projectId}/taskThumbs/${imageId}`;
+}
+
 /** Comprime, guarda la imagen y la añade a la lista de la tarea (un batch). */
 export async function uploadTaskImage(projectId: string, taskId: string, uid: string, file: File) {
   checkFile(file);
   const { db } = getFirebase();
-  const image = await compressImage(file);
+  const [image, thumb] = await Promise.all([compressImage(file), compressThumbnail(file)]);
   const ref = doc(taskImagesCollection(db, projectId));
   const batch = writeBatch(db);
+  batch.set(taskThumbDoc(db, projectId, ref.id), {
+    taskId,
+    mimeType: thumb.mimeType,
+    size: thumb.blob.size,
+    data: await bytesOf(thumb),
+    createdBy: uid,
+    createdAt: serverTimestamp(),
+  });
   batch.set(ref, {
     taskId,
     name: file.name.slice(0, 200) || "imagen",
@@ -185,6 +199,7 @@ export async function uploadTaskImage(projectId: string, taskId: string, uid: st
   batch.update(taskDoc(db, projectId, taskId), { images: arrayUnion(ref.id), updatedAt: serverTimestamp() });
   await batch.commit();
   prime(taskImagePath(projectId, ref.id), null, image);
+  prime(taskThumbPath(projectId, ref.id), null, thumb);
   return ref.id;
 }
 
@@ -192,6 +207,7 @@ export function deleteTaskImage(projectId: string, taskId: string, imageId: stri
   const { db } = getFirebase();
   const batch = writeBatch(db);
   batch.delete(taskImageDoc(db, projectId, imageId));
+  batch.delete(taskThumbDoc(db, projectId, imageId));
   batch.update(taskDoc(db, projectId, taskId), { images: arrayRemove(imageId), updatedAt: serverTimestamp() });
   return batch.commit();
 }
@@ -201,6 +217,9 @@ export async function deleteImagesOf(projectId: string, imageIds: string[]) {
   if (imageIds.length === 0) return;
   const { db } = getFirebase();
   const batch = writeBatch(db);
-  imageIds.forEach((id) => batch.delete(taskImageDoc(db, projectId, id)));
+  imageIds.forEach((id) => {
+    batch.delete(taskImageDoc(db, projectId, id));
+    batch.delete(taskThumbDoc(db, projectId, id));
+  });
   await batch.commit();
 }

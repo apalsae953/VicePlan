@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition, type FormEvent, type ReactNode } from "react";
 import {
+  Bell,
   Check,
   CloudUpload,
   Download,
@@ -46,14 +47,17 @@ import { newPasswordError } from "@/lib/password";
 import { cn } from "@/lib/utils";
 import { displayNameOf, useAuth, useCurrentUser } from "./auth-provider";
 import { GoogleIcon } from "./google-icon";
+import { NotificationsTab } from "./notifications-tab";
 import { PasswordChecklist, PasswordInput } from "./password-field";
 import { useProjects } from "./projects-provider";
+import { notify } from "@/lib/notify";
 
-type Tab = "profile" | "security" | "privacy";
+type Tab = "profile" | "security" | "notifications" | "privacy";
 
 const TABS: { value: Tab; label: string; icon: typeof UserRound }[] = [
   { value: "profile", label: "Perfil", icon: UserRound },
   { value: "security", label: "Seguridad", icon: KeyRound },
+  { value: "notifications", label: "Notificaciones", icon: Bell },
   { value: "privacy", label: "Datos y privacidad", icon: ShieldCheck },
 ];
 
@@ -111,6 +115,7 @@ export function AccountSettingsDialog({
               />
             )}
             {tab === "security" && <SecurityTab />}
+            {tab === "notifications" && <NotificationsTab />}
             {tab === "privacy" && <PrivacyTab onDelete={() => setDeleting(true)} />}
           </div>
         </DialogContent>
@@ -352,6 +357,8 @@ function SecurityTab() {
     startTransition(async () => {
       try {
         await setAccountPassword(user, password, methods.password ? current : undefined);
+        // Aviso de seguridad a su email (si no ha sido él, puede reaccionar).
+        notify({ type: "password" });
         await refresh();
         setCurrent("");
         setPassword("");

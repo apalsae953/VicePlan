@@ -30,7 +30,37 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) 
 }
 
 /** Lado de las fotos de perfil y de las imágenes de proyecto (cuadradas). */
-export const SQUARE_IMAGE_SIZE = 256;
+export const SQUARE_IMAGE_SIZE = 512;
+
+/**
+ * Miniatura de una imagen de tarea (portada de la tarjeta y rejilla del
+ * panel): 480 px como mucho y ≤ 70 KB, para que el tablero cargue rápido.
+ */
+export async function compressThumbnail(file: File): Promise<CompressedImage> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    let scale = Math.min(1, 480 / Math.max(bitmap.width, bitmap.height));
+    for (let round = 0; round < 4; round++) {
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const context = canvas.getContext("2d");
+      if (!context) throw new Error("El navegador no puede procesar imágenes.");
+      context.drawImage(bitmap, 0, 0, w, h);
+      for (const quality of [0.72, 0.55]) {
+        let blob = await canvasToBlob(canvas, "image/webp", quality);
+        if (!blob || blob.type !== "image/webp") blob = await canvasToBlob(canvas, "image/jpeg", quality);
+        if (blob && blob.size <= 70 * 1024) return { blob, mimeType: blob.type, width: w, height: h };
+      }
+      scale *= 0.7;
+    }
+    throw new Error(`«${file.name}» no se puede reducir para la miniatura.`);
+  } finally {
+    bitmap.close();
+  }
+}
 /** Tope de bytes de una imagen cuadrada (las reglas admiten hasta 150 KB). */
 const MAX_SQUARE_BYTES = 120 * 1024;
 

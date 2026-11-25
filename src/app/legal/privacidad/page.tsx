@@ -76,6 +76,13 @@ export default function PrivacyPage() {
               <td>Ejecución del contrato (art. 6.1.b RGPD).</td>
             </tr>
             <tr>
+              <td>
+                Avisarte por email de lo que te afecta: te asignan una tarea, comentan en las tuyas, te invitan a un
+                proyecto o cambia tu contraseña. Eliges cuáles en Mi cuenta → Notificaciones.
+              </td>
+              <td>Ejecución del contrato (art. 6.1.b RGPD); el aviso de seguridad, interés legítimo (art. 6.1.f).</td>
+            </tr>
+            <tr>
               <td>Proteger las cuentas y el servicio frente a accesos indebidos y abusos.</td>
               <td>Interés legítimo en la seguridad del servicio (art. 6.1.f RGPD).</td>
             </tr>
@@ -101,6 +108,10 @@ export default function PrivacyPage() {
           fuera del Espacio Económico Europeo (Estados Unidos); esas transferencias se amparan en el Marco de Privacidad
           de Datos UE-EE. UU., en el que Google LLC está certificada, y en las cláusulas contractuales tipo de la Comisión
           Europea.
+        </li>
+        <li>
+          <strong>Vercel Inc.</strong> aloja la web y procesa las peticiones; los <strong>avisos por email</strong> se envían
+          a través de Gmail (Google) desde la cuenta de correo de VicePlan.
         </li>
         <li>Autoridades públicas, solo cuando una ley lo exija.</li>
       </ul>

@@ -5,6 +5,7 @@ rules_version = '2';
 // Modelo:
 //   users/{uid}                               perfil de cada usuario (solo él)
 //   avatars/{uid}                             foto de perfil subida (la ven todos los usuarios)
+//   notificationSettings/{uid}                qué avisos por email quiere (lo lee quien avisa)
 //   inviteCodes/{código}                      código de invitación → proyecto
 //   projects/{projectId}                      acceso por pertenencia a memberIds
 //   projects/{projectId}/milestones/*         ┐
@@ -13,6 +14,7 @@ rules_version = '2';
 //   projects/{projectId}/gddNodes/*           ├ heredan el acceso del proyecto
 //   projects/{projectId}/gddAssets/*          │ (imágenes del GDD, en bytes)
 //   projects/{projectId}/taskImages/*         │ (imágenes de tareas, en bytes)
+//   projects/{projectId}/taskThumbs/*         │ (sus miniaturas)
 //   projects/{projectId}/branding/logo        │ (imagen del proyecto)
 //   projects/{projectId}/activity/*           │ (registro inmutable)
 //   projects/{projectId}/joins/{uid}          ┘ (prueba del código al unirse)
@@ -137,6 +139,21 @@ service cloud.firestore {
         && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['data', 'mimeType', 'size', 'version', 'updatedAt'])
         && validSmallImage(request.resource.data);
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ─── Preferencias de avisos por email ────────────────────────────────────
+    // Solo booleanos; las lee el servidor de avisos con el token de quien avisa.
+
+    match /notificationSettings/{uid} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['assigned', 'comments', 'projects', 'updatedAt'])
+        && request.resource.data.assigned is bool
+        && request.resource.data.comments is bool
+        && request.resource.data.projects is bool;
       allow delete: if signedIn() && request.auth.uid == uid;
     }
 
@@ -493,6 +510,19 @@ service cloud.firestore {
 
         allow read, delete: if isMember(projectId);
         allow create: if isMemberAfter(projectId) && validTaskImage(request.resource.data);
+        allow update: if false;
+      }
+
+      // Miniatura de cada imagen de tarea (misma id), para tarjetas y rejilla.
+      match /taskThumbs/{imageId} {
+        allow read, delete: if isMember(projectId);
+        allow create: if isMemberAfter(projectId)
+          && request.resource.data.keys().hasOnly(['taskId', 'mimeType', 'size', 'data', 'createdBy', 'createdAt'])
+          && reqString(request.resource.data.taskId, 1, 128)
+          && request.resource.data.mimeType in ['image/webp', 'image/jpeg']
+          && request.resource.data.data is bytes && request.resource.data.data.size() <= 80000
+          && request.resource.data.size == request.resource.data.data.size()
+          && request.resource.data.createdBy == request.auth.uid;
         allow update: if false;
       }
 

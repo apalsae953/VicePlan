@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { useCurrentUser } from "@/components/auth/auth-provider";
 import { MemberAvatar } from "@/components/members/member-avatar";
+import { ClickableMemberAvatar } from "@/components/members/member-photo";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,7 @@ import { CategoriesTab } from "./categories-tab";
 import { InviteCodeSection } from "./invite-code-section";
 import { ProjectImageField } from "./project-image-field";
 import { useWorkspaceStore } from "@/stores/workspace-store-provider";
+import { notify } from "@/lib/notify";
 
 const TABS: { value: ProjectSettingsTab; label: string; icon: typeof Users }[] = [
   { value: "general", label: "General", icon: Settings2 },
@@ -200,6 +202,7 @@ function OwnerZone() {
     startBusy(async () => {
       try {
         await transferOwnership(project.id, heirMember.uid);
+        notify({ type: "owner", projectId: project.id });
         setConfirming(null);
         setHeir("");
         toast.success("Propiedad transferida", {
@@ -354,9 +357,10 @@ function MembersTab() {
     startInvite(async () => {
       try {
         await inviteByEmail(project.id, target);
+        notify({ type: "invited", projectId: project.id, email: target });
         setEmail("");
         toast.success("Invitación enviada", {
-          description: `${target} la verá al iniciar sesión.`,
+          description: `Le llegará un email a ${target} y la verá al entrar.`,
         });
       } catch (err) {
         toast.error(firestoreErrorMessage(err, "No se pudo invitar"));
@@ -423,7 +427,7 @@ function MembersTab() {
           className={cn("text-xs", error ? "text-destructive" : "text-muted-foreground")}
           role={error ? "alert" : undefined}
         >
-          {error ?? "La verá al entrar con ese email (Google, o email verificado). No se envía correo."}
+          {error ?? "Le avisamos por email; la verá al entrar con ese email (Google, o email verificado)."}
         </p>
       </form>
 
@@ -438,7 +442,7 @@ function MembersTab() {
             const canRemove = (isOwner && !self) || (!member.isOwner && self);
             return (
               <li key={member.uid} className="flex items-center gap-3 rounded-md px-1 py-1.5 hover:bg-accent/40">
-                <MemberAvatar size="lg" name={member.name} email={member.email} photoURL={member.photoURL} />
+                <ClickableMemberAvatar member={member} />
                 <div className="min-w-0 flex-1 leading-tight">
                   <p className="truncate text-[13px]">
                     {memberDisplayName(member)}

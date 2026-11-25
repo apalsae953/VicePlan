@@ -22,7 +22,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useStoredImage } from "@/hooks/use-stored-image";
 import { firestoreErrorMessage } from "@/lib/firestore/errors";
 import { imageErrorMessage } from "@/lib/firestore/gdd-assets";
-import { deleteTaskImage, MAX_TASK_IMAGES, taskImagePath, uploadTaskImage } from "@/lib/firestore/stored-images";
+import {
+  deleteTaskImage,
+  MAX_TASK_IMAGES,
+  taskImagePath,
+  taskThumbPath,
+  uploadTaskImage,
+} from "@/lib/firestore/stored-images";
 import { imageRejection } from "@/lib/images";
 import type { BoardTask } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -34,7 +40,7 @@ import { useWorkspaceStore } from "@/stores/workspace-store-provider";
  * Se añaden con el botón, arrastrándolas o pegándolas (Ctrl+V) en el panel.
  */
 
-const HINT = "Arrastra imágenes aquí, pégalas con Ctrl+V o pulsa Añadir. Se comprimen solas.";
+const HINT = "Pulsa una imagen para verla en grande. Para añadir: arrástralas aquí, pégalas con Ctrl+V o pulsa Añadir.";
 
 /** Filtra los archivos válidos y avisa de los que no lo son. */
 function validFiles(files: File[], room: number) {
@@ -128,10 +134,14 @@ export function TaskImagesSection({
       }
     >
       {task.images.length + uploading > 0 && (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {task.images.map((id, index) => (
             <li key={id} className="group/thumb relative">
-              <StoredThumb path={taskImagePath(projectId, id)} onOpen={() => setViewing(index)} />
+              <StoredThumb
+                path={taskThumbPath(projectId, id)}
+                fallback={taskImagePath(projectId, id)}
+                onOpen={() => setViewing(index)}
+              />
               <button
                 type="button"
                 onClick={() => setRemoving(id)}
@@ -144,7 +154,7 @@ export function TaskImagesSection({
           ))}
           {Array.from({ length: uploading }, (_, i) => (
             <li key={`uploading-${i}`} className="relative">
-              <Skeleton className="aspect-square w-full rounded-md" />
+              <Skeleton className="aspect-[4/3] w-full rounded-md" />
               <Loader2 className="absolute inset-0 m-auto size-4 animate-spin text-muted-foreground" aria-label="Subiendo" />
             </li>
           ))}
@@ -199,7 +209,7 @@ export function DraftImagesSection({ files, onChange }: { files: File[]; onChang
       }
     >
       {files.length > 0 && (
-        <ul className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {previews.map((url, index) => (
             <li key={url} className="group/thumb relative">
               <Thumb src={url} />
@@ -278,17 +288,17 @@ function ImagesFrame({
 }
 
 function Thumb({ src, onOpen }: { src: string | null; onOpen?: () => void }) {
-  if (!src) return <Skeleton className="aspect-square w-full rounded-md" />;
+  if (!src) return <Skeleton className="aspect-[4/3] w-full rounded-md" />;
   const image = (
     // eslint-disable-next-line @next/next/no-img-element -- imagen del usuario ya en memoria (blob:)
-    <img src={src} alt="" className="aspect-square w-full rounded-md border object-cover" />
+    <img src={src} alt="" className="aspect-[4/3] w-full cursor-zoom-in rounded-md border object-cover" />
   );
   if (!onOpen) return image;
   return (
     <button
       type="button"
       onClick={onOpen}
-      aria-label="Ver imagen"
+      aria-label="Ver imagen en grande"
       className="block w-full rounded-md outline-none transition-opacity duration-150 hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring/50"
     >
       {image}
@@ -296,8 +306,8 @@ function Thumb({ src, onOpen }: { src: string | null; onOpen?: () => void }) {
   );
 }
 
-function StoredThumb({ path, onOpen }: { path: string; onOpen: () => void }) {
-  return <Thumb src={useStoredImage(path)} onOpen={onOpen} />;
+function StoredThumb({ path, fallback, onOpen }: { path: string; fallback: string; onOpen: () => void }) {
+  return <Thumb src={useStoredImage(path, null, fallback)} onOpen={onOpen} />;
 }
 
 /** Visor a pantalla casi completa con flechas (← →) para pasar de imagen. */

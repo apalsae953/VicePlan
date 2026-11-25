@@ -25,6 +25,7 @@ import { memberDisplayName } from "@/lib/firestore/mappers";
 import type { ActivityEvent, BoardTask, MemberProfile, TaskComment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspace-store-provider";
+import { notify } from "@/lib/notify";
 
 type Tab = "comments" | "activity";
 
@@ -93,8 +94,9 @@ function Comments({ task, profiles }: { task: BoardTask; profiles: Record<string
     if (!body || pending) return;
     startTransition(async () => {
       try {
-        await addComment(projectId, task.id, user.uid, body);
+        const comment = await addComment(projectId, task.id, user.uid, body);
         setDraft("");
+        notify({ type: "comment", projectId, taskId: task.id, commentId: comment.id });
         logActivity(projectId, user.uid, {
           type: "task.commented",
           taskId: task.id,

@@ -79,8 +79,8 @@ debe respetarlo; ante la duda, menos.
   proyecto de Firebase sigue siendo `controltrabajo-2xdnk` (no se puede
   cambiar); su nombre visible, el remitente de los emails y la pantalla de
   consentimiento de Google ya dicen VicePlan.
-- **Producción en Vercel:** proyecto `vice-plan` (equipo
-  `apalsae953s-projects`) → https://vice-plan.vercel.app, conectado al repo
+- **Producción en Vercel:** proyecto `viceplan` (equipo
+  `apalsae953s-projects`) → https://viceplan.vercel.app, conectado al repo
   GitHub `apalsae953/VicePlan` (rama `main`). Las `NEXT_PUBLIC_FIREBASE_*`
   están en las variables de entorno del proyecto de Vercel (sin ellas sale
   "Falta configurar Firebase"). Desplegar: push a `main` o
@@ -88,8 +88,8 @@ debe respetarlo; ante la duda, menos.
   evita subir `.env*`).
 - **Pantalla de consentimiento de Google** (Google Cloud → Google Auth
   Platform): externa y en producción, nombre VicePlan, página principal,
-  privacidad y términos en vice-plan.vercel.app, dominios autorizados
-  `controltrabajo-2xdnk.firebaseapp.com` y `vice-plan.vercel.app`, contacto del
+  privacidad y términos en viceplan.vercel.app, dominios autorizados
+  `controltrabajo-2xdnk.firebaseapp.com` y `viceplan.vercel.app`, contacto del
   desarrollador relleno. Si falta algún dato obligatorio, Google responde con
   un **error 500** tras elegir la cuenta. Al cambiar de dominio, actualizarla
   junto con los dominios autorizados de Firebase Auth.
@@ -102,7 +102,7 @@ debe respetarlo; ante la duda, menos.
   necesita además `supportEmail`, que no se guarda en el repo.
 - **Configuración de Auth** (no está en `firebase.json`; se cambió por la API
   `identitytoolkit admin/v2 …/config`): dominios autorizados `localhost`,
-  `127.0.0.1`, `vice-plan.vercel.app`, `*.firebaseapp.com`, `*.web.app` (al publicar la app en otro
+  `127.0.0.1`, `viceplan.vercel.app`, `*.firebaseapp.com`, `*.web.app` (al publicar la app en otro
   dominio, **añadirlo** o Google fallará con `auth/unauthorized-domain`);
   política de contraseñas ENFORCE (mín. 8, minúscula + número, igual que
   `lib/password.ts`); protección contra enumeración de emails activa; emails en
@@ -210,6 +210,12 @@ projects/{projectId}/tasks/{id}      number, title, description, status, categor
                                      tags[], subtasks[{id, title, done}], blockedBy[] (ids),
                                      completedAt (al pasar a Hecho), createdBy, timestamps
 projects/{projectId}/tasks/{id}/comments/{id}  authorId, body, createdAt, editedAt
+projects/{projectId}/taskImages/{id} taskId, name, mimeType, width, height, size, data (≤ 800 KB),
+                                     createdBy, createdAt — inmutable; la tarea guarda los ids en `images[]`
+projects/{projectId}/taskThumbs/{id} miniatura (≤ 80 KB) de cada imagen de tarea (misma id)
+projects/{projectId}/branding/logo   imagen del proyecto (cuadrada); `projects/{id}.logo` = versión
+avatars/{uid}                        foto de perfil subida (cuadrada, ≤ 150 KB); `users/{uid}.avatar` = versión
+notificationSettings/{uid}           preferencias de avisos por email (assigned, comments, projects)
 projects/{projectId}/activity/{id}   actorId, type, taskId, data{}, createdAt (inmutable)
 projects/{projectId}/joins/{uid}     code, createdAt (prueba del código al unirse)
 projects/{projectId}/gddNodes/{id}   title, content (Markdown), parentId, position, timestamps
@@ -368,6 +374,28 @@ projects/{projectId}/gddAssets/{id}  nodeId, name, mimeType, width, height, size
   "Crear tarea «texto»" (siempre visible al escribir, al final).
 
 ## Game Design Doc
+
+## Imágenes, fotos y avisos
+
+- **Todo en Firestore, gratis** (`lib/firestore/stored-images.ts`): bytes ya
+  comprimidos en el navegador (`lib/images.ts`) y `useStoredImage(path, version,
+  fallback)` los convierte en URLs `blob:` con caché en memoria.
+- **Foto de perfil** (Mi cuenta → Perfil, opcional): `avatars/{uid}`. Los
+  miembros publican `photoURL = "avatar:<uid>?v=<versión>"`; `MemberAvatar` lo
+  resuelve. La regla `ownPhoto` solo deja publicar la foto propia.
+  `AuthProvider` expone `photoURL` efectivo; `profileOf` lo usa (`setOwnPhoto`).
+- **Imagen del proyecto** (Configuración → General, opcional): `ProjectAvatar`
+  con `projectId` + `logo`.
+- **Imágenes de tareas**: sección "Imágenes" del panel (botón, arrastrar,
+  Ctrl+V en todo el panel) y al crear la tarea; portada en la tarjeta
+  (miniatura); visor con flechas. Al borrar la tarea, sus imágenes se borran
+  cuando caduca el "Deshacer".
+- **Avisos por email** (`/api/notify`, Vercel, Node): el cliente avisa tras
+  asignar, comentar, invitar, transferir o cambiar la contraseña; el servidor
+  verifica el token de Firebase (jose), comprueba el hecho leyendo Firestore por
+  REST **con el token del que llama** (las reglas aplican) y envía por SMTP
+  (Gmail con contraseña de aplicación: `SMTP_USER`/`SMTP_PASS` en Vercel). Sin
+  esas variables no envía nada. Preferencias en Mi cuenta → Notificaciones.
 
 - **Datos:** la estructura del árbol (`gddNodes`) y el Markdown (`gddContent`,
   por id) van en campos separados del store. `gddCollapsed` guarda los plegados.
