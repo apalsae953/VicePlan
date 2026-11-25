@@ -1,0 +1,53 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "next-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "next-dev-emulators",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:emulators"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "next-dev-emulators-3001",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:emulators",
+        "--",
+        "-p",
+        "3001"
+      ],
+      "port": 3001
+    },
+    {
+      "name": "emulators",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "emulators"
+      ],
+      "port": 4000
+    }
+  ]
+}

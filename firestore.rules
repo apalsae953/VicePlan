@@ -1,0 +1,453 @@
+rules_version = '2';
+
+// ControlTrabajo — reglas de seguridad de Firestore.
+//
+// Modelo:
+//   users/{uid}                               perfil de cada usuario (solo él)
+//   inviteCodes/{código}                      código de invitación → proyecto
+//   projects/{projectId}                      acceso por pertenencia a memberIds
+//   projects/{projectId}/milestones/*         ┐
+//   projects/{projectId}/tasks/*              │
+//   projects/{projectId}/tasks/*/comments/*   │
+//   projects/{projectId}/gddNodes/*           ├ heredan el acceso del proyecto
+//   projects/{projectId}/gddAssets/*          │ (imágenes del GDD, en bytes)
+//   projects/{projectId}/activity/*           │ (registro inmutable)
+//   projects/{projectId}/joins/{uid}          ┘ (prueba del código al unirse)
+//
+// Todo lo que no se permite explícitamente está denegado.
+// Publicar: `npm run rules:deploy` (reglas + índices).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Utilidades ──────────────────────────────────────────────────────────
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function projectPath(projectId) {
+      return /databases/$(database)/documents/projects/$(projectId);
+    }
+
+    // Miembro según el estado actual del proyecto (lecturas y borrados).
+    function isMember(projectId) {
+      return signedIn()
+        && exists(projectPath(projectId))
+        && request.auth.uid in get(projectPath(projectId)).data.memberIds;
+    }
+
+    // Propietario del proyecto (puede borrar todo su contenido al eliminarlo).
+    function isOwner(projectId) {
+      return isMember(projectId) && get(projectPath(projectId)).data.ownerId == request.auth.uid;
+    }
+
+    // Miembro según el estado tras la escritura: permite crear un proyecto y
+    // su contenido en el mismo batch (proyecto de ejemplo, unirse con código).
+    function isMemberAfter(projectId) {
+      return signedIn()
+        && existsAfter(projectPath(projectId))
+        && request.auth.uid in getAfter(projectPath(projectId)).data.memberIds;
+    }
+
+    function reqString(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function optString(value, max) {
+      return value == null || (value is string && value.size() <= max);
+    }
+
+    function optId(value) {
+      return value == null || (value is string && value.size() > 0 && value.size() <= 128);
+    }
+
+    function optDate(value) {
+      return value == null || (value is string && value.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+    }
+
+    function optTimestamp(value) {
+      return value == null || value is timestamp;
+    }
+
+    function validHours(value) {
+      return value is number && value >= 0 && value <= 10000;
+    }
+
+    function inviteCodeFormat(value) {
+      return value is string && value.matches('^[A-Z0-9]{8}$');
+    }
+
+    // Foto de perfil: solo las de Google. Evita que alguien publique una URL
+    // cualquiera que el navegador de los demás cargaría (p. ej. un rastreador).
+    function optPhoto(value) {
+      return value == null
+        || (value is string
+            && value.size() <= 2048
+            && value.matches('^https://[a-z0-9-]+[.]googleusercontent[.]com/.*'));
+    }
+
+    // ─── Usuarios ────────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      function validProfile(d) {
+        return d.keys().hasOnly([
+            'displayName', 'email', 'photoURL', 'createdAt', 'lastSeenAt', 'termsVersion', 'acceptedTermsAt'
+          ])
+          && optString(d.get('displayName', null), 200)
+          && optString(d.get('email', null), 320)
+          && optPhoto(d.get('photoURL', null))
+          && optString(d.get('termsVersion', null), 20)
+          && optTimestamp(d.get('acceptedTermsAt', null));
+      }
+
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create, update: if signedIn() && request.auth.uid == uid && validProfile(request.resource.data);
+      // Eliminar la cuenta (derecho de supresión) borra también el perfil.
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ─── Mis comentarios ─────────────────────────────────────────────────────
+    // Consulta de grupo `comments where authorId == uid`: cada persona lee los
+    // suyos en cualquier proyecto (para descargar o borrar sus datos).
+
+    match /{path=**}/comments/{commentId} {
+      allow read: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    // ─── Códigos de invitación ───────────────────────────────────────────────
+    // Se leen por id (quien tiene el código ve a qué proyecto lleva) pero no se
+    // pueden listar. Solo los miembros los crean, y solo el código vigente.
+
+    match /inviteCodes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && inviteCodeFormat(code)
+        && request.resource.data.keys().hasOnly(['projectId', 'projectName', 'createdBy', 'createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && reqString(request.resource.data.projectName, 1, 100)
+        && isMember(request.resource.data.projectId)
+        && getAfter(projectPath(request.resource.data.projectId)).data.get('inviteCode', null) == code;
+      allow update: if false;
+      allow delete: if signedIn() && isMember(resource.data.projectId);
+    }
+
+    // ─── Proyectos ───────────────────────────────────────────────────────────
+
+    match /projects/{projectId} {
+      function validMemberEntry(entry) {
+        return entry is map
+          && entry.keys().hasOnly(['name', 'email', 'photoURL'])
+          && optString(entry.get('name', null), 200)
+          && optString(entry.get('email', null), 320)
+          && optPhoto(entry.get('photoURL', null));
+      }
+
+      function validProject(d) {
+        return d.keys().hasOnly([
+            'name', 'key', 'description', 'ownerId', 'memberIds', 'members',
+            'invitedEmails', 'categories', 'inviteCode', 'taskCounter', 'createdAt', 'updatedAt'
+          ])
+          && reqString(d.name, 1, 100)
+          && d.key is string && d.key.matches('^[A-Z0-9]{2,5}$')
+          && optString(d.get('description', null), 2000)
+          && d.ownerId is string
+          && d.memberIds is list && d.memberIds.size() >= 1 && d.memberIds.size() <= 50
+          && d.ownerId in d.memberIds
+          && d.get('members', {}) is map
+          && d.get('invitedEmails', []) is list && d.get('invitedEmails', []).size() <= 50
+          && d.get('categories', []) is list && d.get('categories', []).size() <= 30
+          && (d.get('inviteCode', null) == null || inviteCodeFormat(d.inviteCode))
+          && d.taskCounter is int && d.taskCounter >= 0;
+      }
+
+      function isMemberNow() {
+        return request.auth.uid in resource.data.memberIds;
+      }
+
+      // Invitado: su email (verificado, en minúsculas) está en invitedEmails.
+      function isInvited() {
+        return request.auth.token.email_verified == true
+          && request.auth.token.email is string
+          && request.auth.token.email.lower() in resource.data.get('invitedEmails', []);
+      }
+
+      function changedKeys() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+
+      // En `members` solo cambia (o se crea) la entrada del propio usuario.
+      function onlyOwnMemberEntry() {
+        return request.resource.data.get('members', {}).diff(resource.data.get('members', {})).affectedKeys()
+            .hasOnly([request.auth.uid])
+          && validMemberEntry(request.resource.data.members[request.auth.uid]);
+      }
+
+      // Entra el propio uid y nadie más.
+      function addsOnlySelf() {
+        return request.resource.data.memberIds.toSet()
+          == resource.data.memberIds.toSet().union([request.auth.uid].toSet());
+      }
+
+      // Aceptar invitación: entra el propio uid y sale el propio email, nada más.
+      function acceptsInvitation() {
+        return isInvited() && !isMemberNow()
+          && changedKeys().hasOnly(['memberIds', 'invitedEmails', 'members', 'updatedAt'])
+          && addsOnlySelf()
+          && request.resource.data.get('invitedEmails', []).toSet()
+               == resource.data.get('invitedEmails', []).toSet().difference([request.auth.token.email.lower()].toSet())
+          && onlyOwnMemberEntry();
+      }
+
+      // Unirse con código: en el mismo batch se escribe joins/{uid} con el
+      // código, y tiene que coincidir con el vigente del proyecto.
+      function joinsWithCode() {
+        let joinPath = /databases/$(database)/documents/projects/$(projectId)/joins/$(request.auth.uid);
+        return !isMemberNow()
+          && resource.data.get('inviteCode', null) != null
+          && existsAfter(joinPath)
+          && getAfter(joinPath).data.code == resource.data.inviteCode
+          && changedKeys().hasOnly(['memberIds', 'members', 'updatedAt'])
+          && addsOnlySelf()
+          && onlyOwnMemberEntry();
+      }
+
+      // Quitar miembros: el propietario a cualquiera (menos a sí mismo) y cada
+      // miembro a sí mismo (salir). Su perfil sale de `members` a la vez.
+      function removesMembers() {
+        let before = resource.data.memberIds.toSet();
+        let after = request.resource.data.memberIds.toSet();
+        let removed = before.difference(after);
+        return isMemberNow()
+          && changedKeys().hasOnly(['memberIds', 'members', 'updatedAt'])
+          && after.difference(before).size() == 0
+          && removed.size() > 0
+          && resource.data.ownerId in after
+          && (request.auth.uid == resource.data.ownerId || removed == [request.auth.uid].toSet())
+          && request.resource.data.get('members', {}).diff(resource.data.get('members', {})).affectedKeys()
+               .difference(removed).size() == 0;
+      }
+
+      // Transferir la propiedad: solo el propietario, a otro miembro, y nada más.
+      function transfersOwnership() {
+        return request.auth.uid == resource.data.ownerId
+          && changedKeys().hasOnly(['ownerId', 'updatedAt'])
+          && request.resource.data.ownerId != resource.data.ownerId
+          && request.resource.data.ownerId in resource.data.memberIds;
+      }
+
+      // Lectura: miembros, y también los invitados por email (para ver la invitación).
+      // Las consultas deben filtrar por memberIds o invitedEmails (array-contains).
+      allow read: if signedIn() && (isMemberNow() || isInvited());
+
+      // Quien crea un proyecto es su propietario y su único miembro.
+      allow create: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.memberIds == [request.auth.uid]
+        && request.resource.data.get('members', {}).keys().hasOnly([request.auth.uid])
+        && request.resource.data.get('invitedEmails', []).size() == 0
+        && request.resource.data.get('inviteCode', null) == null
+        && validProject(request.resource.data);
+
+      // La clave nunca cambia; el propietario solo cambia si él lo transfiere;
+      // el contador de tareas no retrocede.
+      allow update: if signedIn()
+        && validProject(request.resource.data)
+        && request.resource.data.key == resource.data.key
+        && request.resource.data.taskCounter >= resource.data.taskCounter
+        && (
+          transfersOwnership()
+          || (request.resource.data.ownerId == resource.data.ownerId && (
+            // Datos del proyecto, categorías y contador de tareas: cualquier miembro.
+            (isMemberNow() && changedKeys().hasOnly(['name', 'description', 'categories', 'taskCounter', 'updatedAt']))
+            // Invitar por email / código, o cancelar: cualquier miembro.
+            || (isMemberNow() && changedKeys().hasOnly(['invitedEmails', 'inviteCode', 'updatedAt']))
+            // Actualizar el propio nombre/avatar.
+            || (isMemberNow() && changedKeys().hasOnly(['members', 'updatedAt']) && onlyOwnMemberEntry())
+            || acceptsInvitation()
+            || joinsWithCode()
+            || removesMembers()
+          ))
+        );
+
+      allow delete: if signedIn() && request.auth.uid == resource.data.ownerId;
+
+      // ─── Unirse con código ─────────────────────────────────────────────────
+
+      match /joins/{uid} {
+        allow read: if signedIn() && (request.auth.uid == uid || isMember(projectId));
+        allow create, update: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['code', 'createdAt'])
+          && inviteCodeFormat(request.resource.data.code);
+        // Al salir (el propio usuario) o al eliminar el proyecto (el propietario).
+        allow delete: if signedIn() && (request.auth.uid == uid || isOwner(projectId));
+      }
+
+      // ─── Milestones ────────────────────────────────────────────────────────
+
+      match /milestones/{milestoneId} {
+        function validMilestone(d) {
+          return d.keys().hasOnly(['title', 'description', 'status', 'startDate', 'endDate', 'createdAt', 'updatedAt'])
+            && reqString(d.title, 1, 120)
+            && optString(d.get('description', null), 2000)
+            && d.status in ['PLANNED', 'ACTIVE', 'COMPLETED']
+            && optDate(d.get('startDate', null))
+            && optDate(d.get('endDate', null))
+            && (d.get('startDate', null) == null || d.get('endDate', null) == null || d.endDate >= d.startDate);
+        }
+
+        allow read, delete: if isMember(projectId);
+        allow create, update: if isMemberAfter(projectId) && validMilestone(request.resource.data);
+      }
+
+      // ─── Tareas ────────────────────────────────────────────────────────────
+
+      match /tasks/{taskId} {
+        function validTask(d) {
+          return d.keys().hasOnly([
+              'number', 'title', 'description', 'status', 'category', 'priority',
+              'estimatedHours', 'loggedHours', 'position', 'milestoneId', 'gddNodeId',
+              'assigneeId', 'startDate', 'dueDate', 'tags', 'subtasks', 'blockedBy',
+              'completedAt', 'createdBy', 'createdAt', 'updatedAt'
+            ])
+            && d.number is int && d.number > 0
+            && reqString(d.title, 1, 200)
+            && optString(d.get('description', null), 10000)
+            && d.status in ['TODO', 'IN_PROGRESS', 'TESTING', 'DONE']
+            && reqString(d.category, 1, 64)
+            && d.priority in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+            && (d.get('estimatedHours', null) == null || validHours(d.estimatedHours))
+            && validHours(d.loggedHours)
+            && d.position is number
+            && optId(d.get('milestoneId', null))
+            && optId(d.get('gddNodeId', null))
+            && optId(d.get('assigneeId', null))
+            && optDate(d.get('startDate', null))
+            && optDate(d.get('dueDate', null))
+            && d.get('tags', []) is list && d.get('tags', []).size() <= 10
+            && d.get('subtasks', []) is list && d.get('subtasks', []).size() <= 50
+            && d.get('blockedBy', []) is list && d.get('blockedBy', []).size() <= 20
+            && optTimestamp(d.get('completedAt', null));
+        }
+
+        // El responsable debe ser miembro del proyecto. Si no cambia, se acepta
+        // tal cual (p. ej. tareas antiguas de alguien que ya salió del equipo).
+        function validAssignee() {
+          let assignee = request.resource.data.get('assigneeId', null);
+          return assignee == null
+            || (resource != null && assignee == resource.data.get('assigneeId', null))
+            || assignee in getAfter(projectPath(projectId)).data.memberIds;
+        }
+
+        allow read, delete: if isMember(projectId);
+        allow create: if isMemberAfter(projectId)
+          && validTask(request.resource.data)
+          && validAssignee()
+          && request.resource.data.createdBy == request.auth.uid;
+        // El número (AET-12) y la autoría no cambian una vez creada.
+        allow update: if isMember(projectId)
+          && validTask(request.resource.data)
+          && validAssignee()
+          && request.resource.data.number == resource.data.number
+          && request.resource.data.get('createdBy', null) == resource.data.get('createdBy', null);
+
+        // ─── Comentarios ─────────────────────────────────────────────────────
+
+        match /comments/{commentId} {
+          function validComment(d) {
+            return d.keys().hasOnly(['authorId', 'body', 'createdAt', 'editedAt'])
+              && reqString(d.body, 1, 5000)
+              && optTimestamp(d.get('editedAt', null));
+          }
+
+          allow read: if isMember(projectId);
+          allow create: if isMember(projectId)
+            && validComment(request.resource.data)
+            && request.resource.data.authorId == request.auth.uid;
+          // Solo su autor edita el texto.
+          allow update: if isMember(projectId)
+            && resource.data.authorId == request.auth.uid
+            && validComment(request.resource.data)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['body', 'editedAt']);
+          // Lo borra su autor (aunque ya no sea miembro: borrar sus datos) o el propietario.
+          allow delete: if signedIn()
+            && (resource.data.authorId == request.auth.uid || isOwner(projectId));
+        }
+      }
+
+      // ─── Registro de actividad ─────────────────────────────────────────────
+
+      match /activity/{eventId} {
+        // Datos pequeños para pintar el evento: número y título de la tarea,
+        // de/a (estado, responsable o hito), horas y vía de entrada.
+        function validEventData(d) {
+          return d is map
+            && d.keys().hasOnly(['number', 'title', 'from', 'to', 'hours', 'via'])
+            && (d.get('number', null) == null || d.number is int)
+            && optString(d.get('title', null), 200)
+            && optString(d.get('from', null), 200)
+            && optString(d.get('to', null), 200)
+            && (d.get('hours', null) == null || (d.hours is number && d.hours >= -10000 && d.hours <= 10000))
+            && (d.get('via', null) == null || d.via in ['email', 'code']);
+        }
+
+        allow read: if isMember(projectId);
+        allow create: if isMemberAfter(projectId)
+          && request.resource.data.keys().hasOnly(['actorId', 'type', 'taskId', 'data', 'createdAt'])
+          && request.resource.data.actorId == request.auth.uid
+          && request.resource.data.type in [
+               'task.created', 'task.status', 'task.assigned', 'task.milestone',
+               'task.deleted', 'task.commented', 'task.logged', 'member.joined'
+             ]
+          && optId(request.resource.data.get('taskId', null))
+          && validEventData(request.resource.data.data)
+          && request.resource.data.createdAt == request.time;
+        // Inmutable: solo desaparece al eliminar el proyecto entero.
+        allow update: if false;
+        allow delete: if isOwner(projectId);
+      }
+
+      // ─── Game Design Document ──────────────────────────────────────────────
+
+      match /gddNodes/{nodeId} {
+        function validNode(d) {
+          return d.keys().hasOnly(['title', 'content', 'parentId', 'position', 'createdAt', 'updatedAt'])
+            && reqString(d.title, 1, 160)
+            && d.content is string && d.content.size() <= 200000
+            && optId(d.get('parentId', null))
+            && d.get('parentId', null) != nodeId
+            && d.position is number;
+        }
+
+        allow read, delete: if isMember(projectId);
+        allow create, update: if isMemberAfter(projectId) && validNode(request.resource.data);
+      }
+
+      // ─── Imágenes del GDD ──────────────────────────────────────────────────
+      // Concept art comprimido en el navegador y guardado como bytes (plan
+      // gratuito, sin Cloud Storage). Inmutables: se crean y se borran.
+
+      match /gddAssets/{assetId} {
+        function validAsset(d) {
+          return d.keys().hasOnly([
+              'nodeId', 'name', 'mimeType', 'width', 'height', 'size', 'data', 'createdBy', 'createdAt'
+            ])
+            && reqString(d.nodeId, 1, 128)
+            && reqString(d.name, 1, 200)
+            && d.mimeType in ['image/webp', 'image/jpeg', 'image/png', 'image/gif']
+            && d.width is int && d.width > 0 && d.width <= 8192
+            && d.height is int && d.height > 0 && d.height <= 8192
+            && d.data is bytes && d.data.size() <= 800000
+            && d.size == d.data.size()
+            && d.createdBy == request.auth.uid;
+        }
+
+        allow read, delete: if isMember(projectId);
+        allow create: if isMember(projectId) && validAsset(request.resource.data);
+        allow update: if false;
+      }
+    }
+  }
+}
